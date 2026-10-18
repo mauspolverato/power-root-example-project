@@ -14,7 +14,7 @@ npm run demo                  # offline end-to-end run on 3 fictional businesses
 npm run agency -- serve       # open http://localhost:4173/<demo-folder>/
 ```
 
-For the browser QA step you need Chromium: run `npx playwright install chromium` once, or set `CHROMIUM_PATH`.
+For the browser QA step you need Chromium: run `npx playwright-core install chromium` once, or set `CHROMIUM_PATH`.
 
 Results:
 - `output/demos/<business>-<token>/` — the demo site (static HTML/CSS, deployable anywhere)

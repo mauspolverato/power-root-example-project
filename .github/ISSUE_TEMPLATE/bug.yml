@@ -1,0 +1,22 @@
+name: Bug
+description: Something in the pipeline, generator or QA is wrong
+labels: [bug]
+body:
+  - type: input
+    id: command
+    attributes:
+      label: Command you ran
+      placeholder: npm run agency -- run --id 12
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened vs. what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output / error (`npm run agency -- show <id>` helps)
+      render: text

@@ -1,0 +1,26 @@
+name: Feature
+description: New capability or roadmap item
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Roadmap phase
+      options:
+        - "1 — Discovery, analysis, demos"
+        - "2 — Dashboard, scoring, proposals"
+        - "3 — Outreach & CRM"
+        - "4 — Onboarding, payments, deployment"
+        - "5 — Monitoring & scale"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem it solves
+    validations:
+      required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: Proposed approach
