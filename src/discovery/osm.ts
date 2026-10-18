@@ -67,6 +67,8 @@ export function parseOsmElements(elements: OsmElement[], industry: Industry, cit
         lat: e.lat ?? e.center?.lat,
         lon: e.lon ?? e.center?.lon,
         socials,
+        whatsapp: t["contact:whatsapp"],
+        photos: [],
         source: "osm",
         sourceId: `${e.type}/${e.id}`,
       } satisfies BusinessInput;

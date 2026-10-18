@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { auditWebsite } from "./audit/website.ts";
 import { buildBrief, heuristicBrief, sanitizeBrief } from "./brand/analyze.ts";
@@ -12,7 +12,7 @@ import { quote } from "./pricing/engine.ts";
 import { analysisReport, clientProposal } from "./proposal/proposal.ts";
 import { type QaReport, runQa } from "./qa/check.ts";
 import { scoreLead } from "./scoring/score.ts";
-import type { BrandSignals, Business, DesignBrief, WebsiteAudit } from "./types.ts";
+import { type BrandSignals, type Business, DesignBrief, SiteContent, type WebsiteAudit } from "./types.ts";
 
 // Phase 1 pipeline for one business:
 // audit -> score -> (if qualified) brief -> copy -> render -> QA (one auto-retry) -> price -> reports.
@@ -73,7 +73,7 @@ export async function processBusiness(store: Store, b: Business, opts: RunOption
       content,
       agency: config.agency,
       logoUrl: signals?.logoUrl,
-      imageUrls: opts.useSiteImages ? signals?.imageUrls : undefined,
+      extraImages: opts.useSiteImages ? signals?.imageUrls : undefined,
       isDemo: true,
     });
 
@@ -119,4 +119,57 @@ export function summarize(store: Store, b: Business): string {
   const score = store.getArtifact<{ score: number; qualified: boolean }>(b.id, "score");
   const audit = store.getArtifact<WebsiteAudit>(b.id, "audit");
   return `#${b.id} ${b.name} [${b.industry}] stage=${store.getStage(b.id)} score=${score?.score ?? "-"} site=${audit ? audit.url ?? "none" : b.website ?? "?"}`;
+}
+
+/** Path of the hand-editable copy for a business (created by `agency edit <id>`). */
+export function editsPath(b: Business): string {
+  return path.join(config.dataDir, "edits", `${b.id}-${slugify(b.name)}.json`);
+}
+
+/** Writes the current generated copy + design to a JSON file you can edit by hand before building. */
+export function exportEdits(store: Store, b: Business): string {
+  const file = editsPath(b);
+  if (!existsSync(file)) {
+    const content = store.getArtifact<SiteContent>(b.id, "content");
+    const brief = store.getArtifact<DesignBrief>(b.id, "brief");
+    if (!content || !brief) throw new Error("Run the pipeline for this business first (agency run --id N)");
+    mkdirSync(path.dirname(file), { recursive: true });
+    const { source: _c, ...cleanContent } = content as SiteContent & { source?: string };
+    const { source: _b, ...cleanBrief } = brief as DesignBrief & { source?: string };
+    writeFileSync(file, JSON.stringify({ content: cleanContent, brief: cleanBrief }, null, 2));
+  }
+  return file;
+}
+
+/**
+ * Builds the real, publishable site from the stored (or hand-edited) brief and
+ * copy: no banner, no placeholders, live WhatsApp/email booking, SEO files.
+ */
+export async function buildProduction(store: Store, b: Business, opts: { siteUrl?: string; skipQa?: boolean } = {}): Promise<{ dir: string; qa: QaReport | null; genericCopy: boolean }> {
+  let content = store.getArtifact<SiteContent>(b.id, "content");
+  let brief = store.getArtifact<DesignBrief>(b.id, "brief");
+  const file = editsPath(b);
+  if (existsSync(file)) {
+    const edited = JSON.parse(readFileSync(file, "utf8")) as { content: unknown; brief: unknown };
+    content = SiteContent.parse(edited.content);
+    brief = DesignBrief.parse(edited.brief);
+  }
+  if (!content || !brief) throw new Error("Run the pipeline for this business first (agency run --id N)");
+  const genericCopy = !existsSync(file) && (content as SiteContent & { source?: string }).source !== "ai";
+  const signals = store.getArtifact<BrandSignals>(b.id, "signals");
+
+  const siteUrl = opts.siteUrl?.replace(/\/$/, "");
+  if (siteUrl && !/^https:\/\//.test(siteUrl)) throw new Error("--domain must be a full https:// URL, e.g. https://arepera.com");
+  const site = renderSite({ business: b, brief: sanitizeBrief(brief, b.industry), content, agency: config.agency, logoUrl: signals?.logoUrl, isDemo: false, siteUrl });
+  const dir = path.join(config.outputDir, "sites", slugify(b.name));
+  rmSync(dir, { recursive: true, force: true });
+  writeSite(site, dir);
+
+  let qa: QaReport | null = null;
+  if (!opts.skipQa) {
+    qa = await runQa(dir, site.pages, path.join(config.outputDir, "reports", `${slugify(b.name)}-production`), "production");
+    store.setArtifact(b.id, "production_qa", qa);
+  }
+  store.log(b.id, "build", `production site built at ${dir}${qa ? ` (QA ${qa.passed ? "passed" : "FAILED"})` : ""}`);
+  return { dir, qa, genericCopy };
 }

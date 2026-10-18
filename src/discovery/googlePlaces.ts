@@ -43,7 +43,7 @@ interface Place {
   regularOpeningHours?: { weekdayDescriptions?: string[] };
 }
 
-export async function discoverGooglePlaces(city: string, industry: Industry, limit = 20): Promise<BusinessInput[]> {
+export async function discoverGooglePlaces(city: string, industry: Industry, limit = 20, languageCode = "es"): Promise<BusinessInput[]> {
   if (!config.googlePlacesKey) throw new Error("GOOGLE_PLACES_API_KEY is not set");
   const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
@@ -52,7 +52,7 @@ export async function discoverGooglePlaces(city: string, industry: Industry, lim
       "X-Goog-Api-Key": config.googlePlacesKey,
       "X-Goog-FieldMask": FIELD_MASK,
     },
-    body: JSON.stringify({ textQuery: `${QUERY_WORDS[industry]} in ${city}`, pageSize: Math.min(limit, 20) }),
+    body: JSON.stringify({ textQuery: `${QUERY_WORDS[industry]} in ${city}`, pageSize: Math.min(limit, 20), languageCode }),
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`Google Places returned HTTP ${res.status}: ${await res.text()}`);
@@ -68,6 +68,7 @@ export async function discoverGooglePlaces(city: string, industry: Industry, lim
     lat: p.location?.latitude,
     lon: p.location?.longitude,
     socials: {},
+    photos: [],
     source: "google_places",
     sourceId: p.id,
   }));

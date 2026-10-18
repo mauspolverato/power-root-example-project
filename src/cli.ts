@@ -7,7 +7,7 @@ import { Store } from "./db.ts";
 import { importCsv } from "./discovery/csv.ts";
 import { discoverGooglePlaces } from "./discovery/googlePlaces.ts";
 import { discoverOsm, OSM_TAGS } from "./discovery/osm.ts";
-import { processBusiness, summarize } from "./pipeline.ts";
+import { buildProduction, exportEdits, processBusiness, slugify, summarize } from "./pipeline.ts";
 import { serveDir } from "./qa/server.ts";
 import { Industry, type BusinessInput } from "./types.ts";
 
@@ -17,10 +17,12 @@ const HELP = `AI web agency — Phase 1 CLI
   import <file.csv>                     Import leads from a CSV (see fixtures/businesses.csv)
   run [--id <n>] [--all] [--use-site-images] [--force] [--skip-qa]
                                         Audit, score, design, generate, QA and price
+  edit <id>                             Export the generated copy/design to a JSON file you can edit
+  build <id> [--domain https://x.com]   Build the real, publishable site (live WhatsApp booking, SEO files)
   list [--stage <stage>]                List businesses and their pipeline stage
   show <id>                             Everything we know about one business
   suppress <email-or-domain> [reason]   Never contact / never generate for this business
-  serve [--port 4173]                   Serve generated demos locally
+  serve [--port 4173] [--sites]         Serve generated demos (or production sites) locally
   demo                                  Offline end-to-end run on fictional fixtures
 
 Industries: ${Industry.options.join(", ")}
@@ -43,6 +45,8 @@ async function main() {
       "use-site-images": { type: "boolean" },
       force: { type: "boolean" },
       "skip-qa": { type: "boolean" },
+      domain: { type: "string" },
+      sites: { type: "boolean" },
     },
   });
   const store = new Store();
@@ -78,6 +82,26 @@ async function main() {
       await runAll(store, targets, { useSiteImages: values["use-site-images"], force: values.force, skipQa: values["skip-qa"] });
       break;
     }
+    case "edit": {
+      const b = store.getBusiness(Number(positionals[0]));
+      if (!b) throw new Error("No such business");
+      console.log(`Edit this file, then run: npm run agency -- build ${b.id}\n${exportEdits(store, b)}`);
+      break;
+    }
+    case "build": {
+      const b = store.getBusiness(Number(positionals[0]));
+      if (!b) throw new Error("No such business");
+      const { dir, qa, genericCopy } = await buildProduction(store, b, { siteUrl: values.domain, skipQa: values["skip-qa"] });
+      console.log(`Production site: ${dir}`);
+      if (genericCopy) console.log(`WARNING: the text is generic fallback copy (no AI, no edits). Services/highlights may not match this business — run "npm run agency -- edit ${b.id}" and fix it before publishing.`);
+      if (qa) {
+        console.log(`QA: ${qa.passed ? "passed" : "FAILED"}`);
+        for (const p of qa.problems) console.log(`  [${p.blocking ? "blocking" : "minor"}] ${p.viewport} ${p.page} ${p.kind}: ${p.detail}`);
+        if (!qa.passed) process.exitCode = 1;
+      }
+      if (!b.photos.length) console.log("Note: no photos supplied — the site uses text-only layouts. Add a photos column (paths separated by |) and re-import for a richer site.");
+      break;
+    }
     case "list":
       for (const b of store.listBusinesses(values.stage)) console.log(summarize(store, b));
       break;
@@ -100,8 +124,9 @@ async function main() {
       break;
     }
     case "serve": {
-      const { url } = await serveDir(path.join(config.outputDir, "demos"), Number(values.port));
-      console.log(`Serving demos at ${url}/<demo-folder>/  (Ctrl+C to stop)`);
+      const kind = values.sites ? "sites" : "demos";
+      const { url } = await serveDir(path.join(config.outputDir, kind), Number(values.port));
+      console.log(`Serving ${kind} at ${url}/<folder>/  (Ctrl+C to stop)`);
       return; // keep running
     }
     case "demo":
@@ -134,9 +159,19 @@ async function demo() {
   const store = new Store(path.join(config.dataDir, "demo.db"));
   for (const b of importCsv(tmp)) store.upsertBusiness(b);
   console.log(`Fixture websites served at ${url}. Running pipeline...\n`);
-  await runAll(store, store.listBusinesses(), {});
-  console.log(`\nReports: ${path.join(config.outputDir, "reports")}\nView demos: npm run agency -- serve`);
-  process.exit(0);
+  const all = store.listBusinesses();
+  await runAll(store, all, {});
+
+  console.log("\nBuilding production versions...");
+  let failed = all.filter((b) => store.getStage(b.id) !== "ready_for_review").length;
+  for (const b of all) {
+    const { dir, qa } = await buildProduction(store, b, { siteUrl: `https://${slugify(b.name)}.example` });
+    console.log(`  ${b.name}: ${dir} — QA ${qa?.passed ? "passed" : "FAILED"}`);
+    for (const p of qa?.problems ?? []) console.log(`    [${p.blocking ? "blocking" : "minor"}] ${p.viewport} ${p.page} ${p.kind}: ${p.detail}`);
+    if (!qa?.passed) failed++;
+  }
+  console.log(`\nReports: ${path.join(config.outputDir, "reports")}\nView demos: npm run agency -- serve   ·   production: npm run agency -- serve --sites`);
+  process.exit(failed ? 1 : 0);
 }
 
 main().catch((err) => {

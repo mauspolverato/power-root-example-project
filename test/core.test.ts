@@ -8,12 +8,14 @@ import { parseCsv } from "../src/discovery/csv.ts";
 import { parseOsmElements } from "../src/discovery/osm.ts";
 import { contrast } from "../src/generator/color.ts";
 import { fallbackContent } from "../src/generator/content.ts";
-import { renderSite } from "../src/generator/render.ts";
+import { formatOpeningHours } from "../src/generator/i18n.ts";
+import { formatPhone, isLikelyWhatsApp, toE164 } from "../src/generator/phone.ts";
+import { renderSite, resolveImages } from "../src/generator/render.ts";
 import { friendly, quote } from "../src/pricing/engine.ts";
 import { scoreLead } from "../src/scoring/score.ts";
 import type { Business, WebsiteAudit } from "../src/types.ts";
 
-const biz: Business = { id: 1, name: "Café <Test> & Co", industry: "restaurant", city: "Roma", country: "IT", phone: "06 1", socials: {}, source: "test", sourceId: "1" };
+const biz: Business = { id: 1, name: "Café <Test> & Co", industry: "restaurant", city: "Roma", country: "IT", phone: "06 1", socials: {}, photos: [], source: "test", sourceId: "1" };
 
 const OLD_SITE = `<html><head><title>Old</title><style>.a{color:#9c2a1e}.b{background:#9c2a1e}.c{color:#3f6b35}.d{color:#ffffff}.e{color:#333}</style></head>
 <body><img src="logo.png" class="logo"><p>Our menu</p><p>&copy; 2016 Old</p><a href="https://instagram.com/x">ig</a></body></html>`;
@@ -71,12 +73,13 @@ test("briefs keep brand colors and always stay readable", () => {
 
 test("rendered demo escapes text, is noindex, and is labelled as a preview", () => {
   const brief = sanitizeBrief(heuristicBrief(biz, null), "restaurant");
-  const site = renderSite({ business: biz, brief, content: fallbackContent(biz, brief), agency: { name: "Studio", email: "a@b.c" }, isDemo: true });
+  const site = renderSite({ business: biz, brief, content: fallbackContent(biz), agency: { name: "Studio", email: "a@b.c" }, isDemo: true });
   const html = site.files["index.html"]!;
   assert.ok(html.includes("Café &lt;Test&gt; &amp; Co"));
   assert.ok(!html.includes("<Test>"));
   assert.ok(html.includes('content="noindex'));
   assert.ok(html.includes("Not an official website"));
+  assert.ok(html.includes('<html lang="en">'));
   assert.equal(site.files["robots.txt"], "User-agent: *\nDisallow: /\n");
   assert.ok(site.files["menu.html"]);
 });
@@ -98,4 +101,59 @@ test("suppression blocks emails and whole domains", () => {
   s.suppress("Owner@Shop.it", "opt-out");
   assert.equal(s.isSuppressed(undefined, "owner@shop.it"), true);
   assert.equal(s.isSuppressed("other@shop.it"), false);
+});
+
+const veBiz: Business = { id: 2, name: "Arepera Test", industry: "restaurant", city: "Caracas", country: "VE", phone: "0414-555.01.01", socials: { instagram: "@arepera" }, photos: [], source: "test", sourceId: "2" };
+
+test("Venezuelan phones normalise to E.164 and mobiles are WhatsApp", () => {
+  assert.equal(toE164("0414-555.01.01", "VE"), "584145550101");
+  assert.equal(toE164("+58 241 555 0303", "VE"), "582415550303");
+  assert.equal(isLikelyWhatsApp("584145550101", "VE"), true);
+  assert.equal(isLikelyWhatsApp("582415550303", "VE"), false); // landline
+  assert.equal(formatPhone("584145550101"), "+58 414 555 0101");
+});
+
+test("opening hours are humanised in Spanish", () => {
+  assert.deepEqual(formatOpeningHours("Tu-Sa 09:00-19:00; Mo off", "es"), ["Mar–Sáb 09:00–19:00", "Lun Cerrado"]);
+  assert.deepEqual(formatOpeningHours("24/7", "es"), ["Abierto las 24 horas"]);
+});
+
+test("Venezuelan site is in Spanish with WhatsApp booking; production has no placeholders", () => {
+  const brief = sanitizeBrief(heuristicBrief(veBiz, null), "restaurant");
+  const content = fallbackContent(veBiz);
+  const demo = renderSite({ business: veBiz, brief, content, agency: { name: "Studio", email: "a@b.c" }, isDemo: true });
+  const html = demo.files["index.html"]!;
+  assert.ok(html.includes('<html lang="es">'));
+  assert.ok(html.includes('data-wa="584145550101"'));
+  assert.ok(html.includes('data-mode="demo"'));
+  assert.ok(html.includes("https://wa.me/584145550101"));
+  assert.ok(html.includes("https://instagram.com/arepera"));
+  assert.ok(demo.files["menu.html"]);
+  assert.ok(html.includes('class="art"')); // demo may show placeholders
+
+  const prod = renderSite({ business: veBiz, brief, content, agency: { name: "Studio", email: "a@b.c" }, isDemo: false, siteUrl: "https://arepera.example" });
+  const p = prod.files["index.html"]!;
+  assert.ok(!p.includes('class="art"'));
+  assert.ok(!p.includes("demo-bar"));
+  assert.ok(p.includes('data-mode="live"'));
+  assert.ok(p.includes('<link rel="canonical" href="https://arepera.example/">'));
+  assert.ok(p.includes("application/ld+json"));
+  assert.match(prod.files["sitemap.xml"]!, /https:\/\/arepera\.example\/menu\.html/);
+  assert.ok(prod.files["404.html"]);
+  assert.ok(!/aquí va tu foto|your photo here/i.test(Object.values(prod.files).join("")));
+});
+
+test("local photos are copied into the site", () => {
+  const withPhotos = { ...veBiz, photos: ["fixtures/photos/arepera-1.jpg", "https://cdn.example/x.jpg", "missing.jpg"] };
+  const { images, assets } = resolveImages(withPhotos);
+  assert.deepEqual(images, ["img/photo-1.jpg", "https://cdn.example/x.jpg"]);
+  assert.ok(assets["img/photo-1.jpg"]!.endsWith("fixtures/photos/arepera-1.jpg"));
+});
+
+test("Venezuelan quotes are in USD at local price level with positive margins", () => {
+  const q = quote(veBiz, null);
+  assert.equal(q.currency, "USD");
+  assert.ok(q.oneTime.price < 600);
+  assert.ok(q.marginOneTime > 0 && q.marginMonthly > 0, `${q.marginOneTime} ${q.marginMonthly}`);
+  assert.ok(q.features.some((f) => f.includes("WhatsApp")));
 });

@@ -1,6 +1,7 @@
 import { aiAvailable, generateStructured } from "../ai.ts";
 import type { Store } from "../db.ts";
 import { ensureContrast, isHex, luminance, mix } from "../generator/color.ts";
+import { INDUSTRY_TEXT } from "../generator/i18n.ts";
 import { INDUSTRY_PROFILES, SECTION_IDS, pick, stableHash, type SectionId } from "../generator/industries.ts";
 import { type BrandSignals, type Business, DesignBrief, type WebsiteAudit } from "../types.ts";
 
@@ -18,6 +19,7 @@ Rules:
 
 export function heuristicBrief(b: Business, signals: BrandSignals | null): DesignBrief {
   const profile = INDUSTRY_PROFILES[b.industry];
+  const label = INDUSTRY_TEXT.en[b.industry].label; // the brief is internal, so English
   const seed = stableHash(b.name);
   const base = pick(profile.palettes, seed);
   const brandColors = signals?.colors ?? [];
@@ -37,8 +39,8 @@ export function heuristicBrief(b: Business, signals: BrandSignals | null): Desig
   const heroes = ["split", "centered", "fullbleed"] as const;
 
   return {
-    positioning: `${b.name} is a ${profile.label.toLowerCase()}${b.city ? ` in ${b.city}` : ""}.`,
-    audience: `Local residents and visitors${b.city ? ` in ${b.city}` : ""} looking for a ${profile.label.toLowerCase()}.`,
+    positioning: `${b.name} is a ${label.toLowerCase()}${b.city ? ` in ${b.city}` : ""}.`,
+    audience: `Local residents and visitors${b.city ? ` in ${b.city}` : ""} looking for a ${label.toLowerCase()}.`,
     toneOfVoice: style === "bold" ? "confident and direct" : style === "luxury" ? "refined and understated" : "warm and welcoming",
     preserveExistingIdentity: keep,
     palette,
@@ -82,10 +84,11 @@ export async function buildBrief(opts: {
   if (!aiAvailable()) return { brief: sanitizeBrief(heuristicBrief(b, signals), b.industry), source: "heuristic" };
 
   const profile = INDUSTRY_PROFILES[b.industry];
+  const label = INDUSTRY_TEXT.en[b.industry].label;
   const prompt = `Write a design brief for a new website for this business.
 
 <business>
-${JSON.stringify({ name: b.name, industry: profile.label, city: b.city, address: b.address, openingHours: b.openingHours, socials: { ...b.socials, ...audit.socialLinks } }, null, 2)}
+${JSON.stringify({ name: b.name, industry: label, country: b.country, city: b.city, address: b.address, openingHours: b.openingHours, socials: { ...b.socials, ...audit.socialLinks } }, null, 2)}
 </business>
 
 <current_website_audit>

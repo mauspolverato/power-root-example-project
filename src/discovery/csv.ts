@@ -4,6 +4,7 @@ import { BusinessInput, Industry } from "../types.ts";
 // Import leads you collected yourself (a chamber-of-commerce list, a trade
 // directory export, businesses you walked past). Header row required; columns:
 // name,industry,address,city,country,phone,email,website,instagram,facebook,opening_hours
+// Optional: whatsapp, language (es|en), photos (file paths or URLs separated by "|").
 
 /** Minimal RFC 4180 parser: handles quoted fields, escaped quotes, and commas/newlines inside quotes. */
 export function parseCsv(text: string): string[][] {
@@ -62,6 +63,9 @@ export function importCsv(file: string): BusinessInput[] {
       email: get("email"),
       website: get("website"),
       openingHours: get("opening_hours"),
+      whatsapp: get("whatsapp"),
+      language: get("language"),
+      photos: (get("photos") ?? "").split("|").map((p) => p.trim()).filter(Boolean),
       socials,
       source: "csv",
       sourceId: `${get("name")}|${get("address") ?? i}`.toLowerCase(),

@@ -30,6 +30,12 @@ export const BusinessInput = z.object({
   lat: z.number().optional(),
   lon: z.number().optional(),
   socials: z.record(z.string(), z.string()).default({}),
+  /** WhatsApp number if different from phone (any format). */
+  whatsapp: z.string().optional(),
+  /** Site language override; otherwise derived from country. */
+  language: z.enum(["es", "en"]).optional(),
+  /** The business's own photos: local file paths or URLs, best first. */
+  photos: z.array(z.string()).default([]),
   source: z.string(),
   sourceId: z.string(),
 });
@@ -134,6 +140,8 @@ export interface LeadScore {
 export interface PriceQuote {
   tier: "starter" | "business" | "commerce";
   features: string[];
+  currency: string;
+  symbol: string;
   oneTime: { price: number };
   subscription: { monthly: number; minimumMonths: number };
   hybrid: { setup: number; monthly: number };

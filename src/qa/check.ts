@@ -13,7 +13,7 @@ import { serveDir } from "./server.ts";
 export interface QaProblem {
   page: string;
   viewport: string;
-  kind: "js_error" | "broken_link" | "broken_asset" | "overflow" | "structure" | "a11y";
+  kind: "js_error" | "broken_link" | "broken_asset" | "overflow" | "structure" | "a11y" | "interaction" | "placeholder";
   detail: string;
   blocking: boolean;
 }
@@ -32,14 +32,14 @@ const VIEWPORTS = [
 
 const axeSource = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
 
-async function checkPage(page: Page, baseUrl: string, siteDir: string, file: string, viewport: string, problems: QaProblem[]): Promise<void> {
+async function checkPage(page: Page, baseUrl: string, siteDir: string, file: string, viewport: string, problems: QaProblem[], mode: "demo" | "production"): Promise<void> {
   const add = (kind: QaProblem["kind"], detail: string, blocking = true): void => void problems.push({ page: file, viewport, kind, detail, blocking });
 
   const res = await page.goto(`${baseUrl}/${file}`, { waitUntil: "load" });
   if (!res || res.status() >= 400) return add("broken_link", `${file} returned HTTP ${res?.status()}`);
   // Let reveal animations settle so screenshots and axe see final state.
   await page.evaluate(() => document.querySelectorAll(".reveal").forEach((el) => el.classList.add("in")));
-  await page.waitForTimeout(700);
+  await scrollThrough(page);
 
   const facts = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -62,6 +62,13 @@ async function checkPage(page: Page, baseUrl: string, siteDir: string, file: str
     if (target && !existsSync(path.join(siteDir, target))) add("broken_link", `Link to missing page: ${href}`);
   }
 
+  if (mode === "production") {
+    const placeholders = await page.locator("svg.art").count();
+    if (placeholders) add("placeholder", `${placeholders} placeholder image(s) on a production page`);
+  }
+
+  if (file === "index.html") await checkInteractions(page, viewport, add, mode);
+
   await page.addScriptTag({ content: axeSource });
   const violations = await page.evaluate(async () => {
     // @ts-expect-error axe is injected at runtime
@@ -71,7 +78,62 @@ async function checkPage(page: Page, baseUrl: string, siteDir: string, file: str
   for (const v of violations) add("a11y", `${v.id} (${v.impact}, ${v.count}x): ${v.help}`, v.impact === "critical" || v.impact === "serious");
 }
 
-export async function runQa(siteDir: string, pages: string[], outDir: string): Promise<QaReport> {
+/** Scroll like a visitor so lazy images load (and get checked), then return to the top. */
+async function scrollThrough(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += window.innerHeight * 0.8) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 60));
+    }
+    window.scrollTo(0, 0);
+  });
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(300);
+}
+
+/** Clicks through what visitors actually use: the mobile menu and the booking form. */
+async function checkInteractions(page: Page, viewport: string, add: (kind: QaProblem["kind"], detail: string, blocking?: boolean) => void, mode: "demo" | "production"): Promise<void> {
+  if (viewport === "mobile") {
+    const toggle = page.locator(".menu-toggle");
+    if (await toggle.isVisible()) {
+      await toggle.click();
+      if (!(await page.locator("nav.main").isVisible())) add("interaction", "Mobile menu does not open");
+      await toggle.click();
+    }
+  }
+
+  const form = page.locator("form[data-booking]");
+  if (!(await form.count())) return;
+  // Capture where the form tries to send the visitor instead of leaving the page.
+  await page.evaluate(() => {
+    (window as unknown as { __opened: string[] }).__opened = [];
+    window.open = (u?: string | URL) => {
+      (window as unknown as { __opened: string[] }).__opened.push(String(u));
+      return null;
+    };
+  });
+  await form.locator('button[type="submit"]').click();
+  if (await form.locator(".form-error").isHidden()) add("interaction", "Empty booking form submitted without showing an error");
+
+  await form.locator('input[name="name"]').fill("QA Prueba");
+  await form.locator('input[name="date"]').fill("2030-01-15");
+  await form.locator('input[name="consent"]').check();
+  const channel = await form.getAttribute("data-channel");
+  await form.locator('button[type="submit"]').click();
+  await page.waitForTimeout(150);
+  if (await form.locator(".form-error").isVisible()) return add("interaction", "Valid booking form still shows an error");
+
+  if (mode === "demo") {
+    const preview = (await form.locator(".form-status pre").textContent()) ?? "";
+    if (!preview.includes("QA Prueba") || !preview.includes("2030")) add("interaction", "Booking preview does not contain the entered details");
+  } else if (channel === "whatsapp") {
+    const opened = await page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
+    const url = opened[0] ?? "";
+    if (!/^https:\/\/wa\.me\/\d{8,15}\?text=/.test(url) || !decodeURIComponent(url).includes("QA Prueba")) add("interaction", `Booking did not open WhatsApp with the request (got: ${url || "nothing"})`);
+  }
+}
+
+export async function runQa(siteDir: string, pages: string[], outDir: string, mode: "demo" | "production" = "demo"): Promise<QaReport> {
   mkdirSync(outDir, { recursive: true });
   const { server, url } = await serveDir(siteDir);
   const browser = await chromium.launch(config.chromiumPath ? { executablePath: config.chromiumPath } : {});
@@ -87,8 +149,12 @@ export async function runQa(siteDir: string, pages: string[], outDir: string): P
         if (r.url().startsWith(url) && r.status() >= 400) problems.push({ page: page.url(), viewport: vp.name, kind: "broken_asset", detail: `${r.status()} ${r.url()}`, blocking: true });
       });
       for (const file of pages) {
-        await checkPage(page, url, siteDir, file, vp.name, problems);
+        await checkPage(page, url, siteDir, file, vp.name, problems, mode);
         if (file === "index.html") {
+          // Fresh load so the screenshot shows the page as a visitor first sees it, not mid-test.
+          await page.goto(`${url}/index.html`, { waitUntil: "load" });
+          await page.evaluate(() => document.querySelectorAll(".reveal").forEach((el) => el.classList.add("in")));
+          await scrollThrough(page);
           const shot = path.join(outDir, `${vp.name}.png`);
           await page.screenshot({ path: shot, fullPage: true });
           screenshots.push(shot);
