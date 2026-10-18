@@ -1,0 +1,4 @@
+name,industry,address,city,country,phone,email,website,instagram,facebook,opening_hours
+Trattoria Da Nonna Lucia,restaurant,"Via della Scala 12, 00153 Roma",Roma,IT,06 1234 5678,info@nonnalucia.example,{{BASE}}/trattoria/,,https://www.facebook.com/example-trattoria,Tu-Su 12:30-15:00; Tu-Su 19:30-23:00
+Fade Factory Barbers,barber,"Corso Buenos Aires 40, 20124 Milano",Milano,IT,02 9876 5432,,,https://instagram.com/example.fadefactory,,Tu-Sa 09:00-19:30
+Studio Dentistico Sorriso Chiaro,dental,"Viale Monte Nero 7, 20135 Milano",Milano,IT,02 5555 0101,segreteria@sorrisochiaro.example,{{BASE}}/dental/,,,Mo-Fr 09:00-19:00

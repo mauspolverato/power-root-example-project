@@ -1,0 +1,28 @@
+{
+  "name": "ai-web-agency",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Finds local businesses with weak websites, analyzes their brand, and generates private website demos plus a priced proposal for human review.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "agency": "node --disable-warning=ExperimentalWarning --import tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --disable-warning=ExperimentalWarning --import tsx --test test/*.test.ts",
+    "demo": "npm run agency -- demo"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "axe-core": "^4.14.0",
+    "cheerio": "^1.2.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "playwright-core": "^1.56.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
