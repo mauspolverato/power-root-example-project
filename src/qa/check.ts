@@ -126,8 +126,13 @@ async function checkInteractions(page: Page, viewport: string, add: (kind: QaPro
   if (await form.locator(".form-error").isHidden()) add("interaction", "Empty booking form submitted without showing an error");
 
   await form.locator('input[name="name"]').fill("QA Prueba");
-  await form.locator('input[name="date"]').fill("2030-01-15");
-  await form.locator('input[name="consent"]').check();
+  // Fill whatever else this form requires (booking forms need a date, quote forms a description).
+  for (const input of await form.locator("[required]:not([name=name])").all()) {
+    const type = await input.getAttribute("type");
+    if (type === "checkbox") await input.check();
+    else if (type === "date") await input.fill("2030-01-15");
+    else await input.fill("QA 2030");
+  }
   const channel = await form.getAttribute("data-channel");
   await form.locator('button[type="submit"]').click();
   await page.waitForTimeout(150);

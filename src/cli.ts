@@ -18,7 +18,8 @@ const HELP = `AI web agency — Phase 1 CLI
   run [--id <n>] [--all] [--use-site-images] [--force] [--skip-qa]
                                         Audit, score, design, generate, QA and price
   edit <id>                             Export the generated copy/design to a JSON file you can edit
-  build <id> [--domain https://x.com]   Build the real, publishable site (live WhatsApp booking, SEO files)
+  build <id> [--domain https://x.com] [--content file.json]
+                                        Build the real, publishable site (live WhatsApp booking, SEO files)
   list [--stage <stage>]                List businesses and their pipeline stage
   show <id>                             Everything we know about one business
   suppress <email-or-domain> [reason]   Never contact / never generate for this business
@@ -46,6 +47,7 @@ async function main() {
       force: { type: "boolean" },
       "skip-qa": { type: "boolean" },
       domain: { type: "string" },
+      content: { type: "string" },
       sites: { type: "boolean" },
     },
   });
@@ -91,7 +93,7 @@ async function main() {
     case "build": {
       const b = store.getBusiness(Number(positionals[0]));
       if (!b) throw new Error("No such business");
-      const { dir, qa, genericCopy } = await buildProduction(store, b, { siteUrl: values.domain, skipQa: values["skip-qa"] });
+      const { dir, qa, genericCopy } = await buildProduction(store, b, { siteUrl: values.domain, skipQa: values["skip-qa"], contentFile: values.content });
       console.log(`Production site: ${dir}`);
       if (genericCopy) console.log(`WARNING: the text is generic fallback copy (no AI, no edits). Services/highlights may not match this business — run "npm run agency -- edit ${b.id}" and fix it before publishing.`);
       if (qa) {

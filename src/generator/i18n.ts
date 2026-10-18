@@ -19,6 +19,7 @@ export interface IndustryText {
   offerPage: string; // URL slug of the dedicated offer page
   bookingLabel: string | null; // null = no booking section
   bookingDetailLabel: string; // second field in the booking form
+  requestKind?: "quote"; // quote requests have no date/time fields
   ctaFallback: string;
   highlights: { title: string; text: string }[];
   services: { name: string; description: string }[];
@@ -26,7 +27,7 @@ export interface IndustryText {
 }
 
 export interface UiText {
-  nav: { about: string; visit: string; contact: string; book: string; menuToggle: string };
+  nav: { about: string; visit: string; contact: string; book: string; quote: string; menuToggle: string };
   skip: string;
   seeFull: (offer: string) => string;
   about: string;
@@ -71,7 +72,7 @@ export interface UiText {
 }
 
 const es: UiText = {
-  nav: { about: "Nosotros", visit: "Visítanos", contact: "Contacto", book: "Reservar", menuToggle: "Menú" },
+  nav: { about: "Nosotros", visit: "Visítanos", contact: "Contacto", book: "Reservar", quote: "Cotizar", menuToggle: "Menú" },
   skip: "Ir al contenido",
   seeFull: () => "Ver la lista completa →",
   about: "Nosotros",
@@ -106,7 +107,7 @@ const es: UiText = {
   },
   visit: "Visítanos",
   hours: "Horario",
-  hoursTbd: "Horario por confirmar.",
+  hoursTbd: "Escríbenos para coordinar tu visita.",
   findUs: "Cómo llegar",
   openMap: "Abrir mapa",
   findOnMap: "Buscar en el mapa",
@@ -142,7 +143,7 @@ const es: UiText = {
 };
 
 const en: UiText = {
-  nav: { about: "About", visit: "Visit", contact: "Contact", book: "Book", menuToggle: "Menu" },
+  nav: { about: "About", visit: "Visit", contact: "Contact", book: "Book", quote: "Get a quote", menuToggle: "Menu" },
   skip: "Skip to content",
   seeFull: (o) => `See the full ${o.toLowerCase()} →`,
   about: "About",
@@ -177,7 +178,7 @@ const en: UiText = {
   },
   visit: "Visit",
   hours: "Opening hours",
-  hoursTbd: "Opening hours to be confirmed.",
+  hoursTbd: "Get in touch to arrange a visit.",
   findUs: "Find us",
   openMap: "Open map",
   findOnMap: "Find on map",
@@ -371,7 +372,7 @@ const enIndustry: Record<Industry, IndustryText> = {
     faq: [{ q: "How much is my property worth?", a: "Request a valuation and we'll give you an informed estimate." }],
   },
   manufacturer: {
-    label: "Manufacturer", article: "a", offerLabel: "Products & services", offerPage: "products", bookingLabel: "Request a quote", bookingDetailLabel: "What you need (type, size)", ctaFallback: "Request a quote",
+    label: "Manufacturer", article: "a", offerLabel: "Products & services", offerPage: "products", bookingLabel: "Request a quote", bookingDetailLabel: "What you need (type, size)", requestKind: "quote", ctaFallback: "Request a quote",
     highlights: [
       { title: "Made to order", text: "Tell us what you need and we'll quote it." },
       { title: "Repairs", text: "We also fix and restore existing work." },
@@ -555,7 +556,7 @@ const esIndustry: Record<Industry, IndustryText> = {
     faq: [{ q: "¿Cuánto vale mi inmueble?", a: "Solicita un avalúo y te damos una estimación informada." }],
   },
   manufacturer: {
-    label: "Fábrica", article: "una", offerLabel: "Productos y servicios", offerPage: "productos", bookingLabel: "Solicita tu cotización", bookingDetailLabel: "Qué necesitas (tipo, medidas)", ctaFallback: "Solicitar cotización",
+    label: "Fábrica", article: "una", offerLabel: "Productos y servicios", offerPage: "productos", bookingLabel: "Solicita tu cotización", bookingDetailLabel: "Qué necesitas (tipo, medidas)", requestKind: "quote", ctaFallback: "Solicitar cotización",
     highlights: [
       { title: "Hecho a la medida", text: "Cuéntanos qué necesitas y te enviamos una cotización." },
       { title: "Reparaciones", text: "También reparamos y recuperamos trabajos existentes." },

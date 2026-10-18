@@ -1,0 +1,41 @@
+{
+  "content": {
+    "heroHeadline": "Cavas isotérmicas en fibra de vidrio",
+    "heroSubheadline": "Fabricamos y reparamos cavas en Valencia, Carabobo. 23 años de experiencia.",
+    "primaryCta": "Solicitar cotización",
+    "about": "En Industrias Fibraspol fabricamos y reparamos cavas isotérmicas en fibra de vidrio. Llevamos 23 años haciendo este trabajo desde nuestro galpón en la Zona Industrial La Florida, en Valencia.\nCuéntanos qué necesitas —una cava nueva o la reparación de la que ya tienes— y te preparamos una cotización.",
+    "highlights": [
+      { "title": "23 años de experiencia", "text": "Más de dos décadas fabricando y reparando cavas en fibra de vidrio." },
+      { "title": "Fabricación y reparación", "text": "Hacemos tu cava nueva o recuperamos la que ya tienes." },
+      { "title": "Hecho en Valencia", "text": "Trabajamos en nuestro propio galpón en la Zona Industrial La Florida." }
+    ],
+    "services": [
+      { "name": "Fabricación de cavas isotérmicas", "description": "Cavas en fibra de vidrio hechas en nuestro galpón. Envíanos el tipo de cava y las medidas que necesitas.", "price": null },
+      { "name": "Reparación de cavas", "description": "Evaluamos y reparamos cavas de fibra de vidrio. Mándanos fotos del daño para darte una primera idea.", "price": null },
+      { "name": "Asesoría y cotización", "description": "Te orientamos sobre la cava adecuada para tu uso y te enviamos una cotización.", "price": null }
+    ],
+    "faq": [
+      { "q": "¿Cómo pido una cotización?", "a": "Escríbenos con el tipo de cava que necesitas y sus medidas. Si es una reparación, incluye fotos del daño. Te respondemos con la cotización." },
+      { "q": "¿Dónde están ubicados?", "a": "En la Av. Lisandro Alvarado, Zona Industrial La Florida, Transversal 93, Valencia, estado Carabobo." },
+      { "q": "¿También reparan cavas?", "a": "Sí. Además de fabricar cavas nuevas, reparamos cavas de fibra de vidrio." }
+    ],
+    "seoTitle": "Industrias Fibraspol — Cavas isotérmicas en fibra de vidrio en Valencia",
+    "seoDescription": "Fabricamos y reparamos cavas isotérmicas en fibra de vidrio en Valencia, Carabobo. 23 años de experiencia. Solicita tu cotización."
+  },
+  "brief": {
+    "positioning": "Fabricante con 23 años de experiencia en cavas isotérmicas de fibra de vidrio, en la zona industrial de Valencia.",
+    "audience": "Transportistas, distribuidores y comercios de Carabobo y del centro del país que necesitan una cava nueva o reparar la suya.",
+    "toneOfVoice": "directo, confiable y cercano",
+    "preserveExistingIdentity": true,
+    "palette": { "primary": "#2340a8", "secondary": "#eaf1fc", "accent": "#4f9be8", "background": "#ffffff", "text": "#0f1a33" },
+    "typography": { "heading": "Archivo", "body": "Inter" },
+    "style": "minimal",
+    "layout": { "hero": "split", "sectionOrder": ["hero", "offer", "highlights", "about", "booking", "hours_location", "faq", "contact"] },
+    "imageryDirection": "Ilustración propia en los azules del logo hasta tener fotos reales del galpón y de cavas terminadas.",
+    "reasons": [
+      "Mantiene el azul del logo FIBRASPOL y el tema de frío (copo de nieve) de su Instagram.",
+      "Estilo sobrio e industrial: el cliente es un negocio que compra por confianza y experiencia.",
+      "La cotización va primero: es la acción principal de este tipo de cliente."
+    ]
+  }
+}

@@ -84,6 +84,7 @@ header.site{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--
 header.site .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-height:4.25rem}
 .brand{display:flex;align-items:center;gap:.6rem;font-family:var(--font-heading);font-weight:${s.headingWeight};font-size:1.3rem;text-decoration:none;color:var(--text);text-transform:${s.headingCase}}
 .brand img{height:2.4rem;width:auto}
+@media (max-width:560px){.brand.has-logo span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}}
 nav.main ul{display:flex;gap:1.4rem;list-style:none;margin:0;padding:0}
 nav.main a{color:var(--text);text-decoration:none;font-weight:500;font-size:.95rem}
 nav.main a:hover{color:var(--primary)}
@@ -312,8 +313,8 @@ function section(id: SectionId, ctx: Ctx, order: SectionId[]): string {
       return `<section id="booking"><div class="wrap"><span class="eyebrow">${esc(t.bookingLabel)}</span><h2>${esc(t.bookingLabel)}</h2>
 <form class="request" ${attrs} novalidate>
 <div class="two"><label>${esc(f.name)} *<input name="name" autocomplete="name" required data-label="${esc(f.name)}"></label><label>${esc(f.contact)}<input name="contact" autocomplete="tel" data-label="${esc(f.contact)}"></label></div>
-<div class="two"><label>${esc(f.date)} *<input type="date" name="date" required data-label="${esc(f.date)}"></label><label>${esc(f.time)}<input type="time" name="time" data-label="${esc(f.time)}"></label></div>
-<label>${esc(t.bookingDetailLabel)}<input name="detail" ${isFood || b.industry === "hotel" ? 'inputmode="numeric"' : ""} data-label="${esc(t.bookingDetailLabel)}"></label>
+${t.requestKind === "quote" ? "" : `<div class="two"><label>${esc(f.date)} *<input type="date" name="date" required data-label="${esc(f.date)}"></label><label>${esc(f.time)}<input type="time" name="time" data-label="${esc(f.time)}"></label></div>`}
+<label>${esc(t.bookingDetailLabel)}${t.requestKind === "quote" ? " *" : ""}<input name="detail" ${isFood || b.industry === "hotel" ? 'inputmode="numeric"' : ""}${t.requestKind === "quote" ? " required" : ""} data-label="${esc(t.bookingDetailLabel)}"></label>
 <label>${esc(f.message)}<textarea name="message" rows="3" data-label="${esc(f.message)}"></textarea></label>
 <label class="consent"><input type="checkbox" name="consent" required> <span>${esc(f.consent)} <a href="privacy.html">${esc(f.privacyLink)}</a>.</span></label>
 <button class="btn${channel === "whatsapp" ? " wa" : ""}" type="submit">${channel === "whatsapp" ? `${WA_ICON} ${esc(f.sendWhatsApp)}` : channel === "instagram" ? `${IG_ICON} ${esc(f.sendInstagram)}` : esc(f.send)}</button>
@@ -348,19 +349,21 @@ function section(id: SectionId, ctx: Ctx, order: SectionId[]): string {
         ctx.tel ? `<p>${esc(ui.call)} <a href="tel:+${ctx.tel}">${esc(formatPhone(ctx.tel))}</a></p>` : "",
         b.email ? `<p>${esc(ui.email)} <a href="mailto:${esc(b.email)}">${esc(b.email)}</a></p>` : "",
         b.address ? `<p>${esc(b.address)}</p>` : "",
-        ...Object.entries(b.socials).map(([k, v]) => `<p><a href="${esc(socialUrl(k, v))}" rel="noopener">${esc(k.charAt(0).toUpperCase() + k.slice(1))}</a></p>`),
+        ...Object.entries(b.socials).map(([k, v]) => `<p><a href="${esc(socialUrl(k, v))}" rel="noopener">${esc(SOCIAL_LABELS[k] ?? k.charAt(0).toUpperCase() + k.slice(1))}${k === "instagram" && instagramHandle(v) ? ` @${esc(instagramHandle(v))}` : ""}</a></p>`),
       ].join("");
       return `<section id="contact"><div class="wrap"><div class="contact-cta reveal"><h2>${esc(ui.contactTitle)}</h2>${lines}</div></div></section>`;
     }
   }
 }
 
+const SOCIAL_LABELS: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", twitter: "X", linktree: "Linktree", youtube: "YouTube" };
+
 /** Accepts "https://instagram.com/x", "instagram.com/x" or "@x". */
 export function socialUrl(network: string, value: string): string {
   if (/^https?:\/\//.test(value)) return value;
   if (/\.(com|net)\//.test(value)) return `https://${value}`;
   const handle = value.replace(/^@/, "");
-  const hosts: Record<string, string> = { instagram: "https://instagram.com/", facebook: "https://facebook.com/", tiktok: "https://tiktok.com/@", twitter: "https://x.com/" };
+  const hosts: Record<string, string> = { instagram: "https://instagram.com/", facebook: "https://facebook.com/", tiktok: "https://tiktok.com/@", twitter: "https://x.com/", linktree: "https://linktr.ee/" };
   return (hosts[network] ?? "https://") + handle;
 }
 
@@ -440,7 +443,7 @@ ${isDemo || opts.path !== "index.html" ? "" : jsonLd(ctx)}
 <body>
 <a class="skip" href="#main">${esc(ui.skip)}</a>
 ${banner}
-<header class="site"><div class="wrap"><a class="brand" href="index.html">${ctx.input.logoUrl ? `<img src="${esc(ctx.input.logoUrl)}" alt="" height="40" onerror="this.remove()">` : ""}<span>${esc(b.name)}</span></a>
+<header class="site"><div class="wrap"><a class="brand${ctx.input.logoUrl ? " has-logo" : ""}" href="index.html">${ctx.input.logoUrl ? `<img src="${esc(ctx.input.logoUrl)}" alt="" height="40" onerror="this.remove()">` : ""}<span>${esc(b.name)}</span></a>
 <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">${esc(ui.nav.menuToggle)}</button>
 <nav class="main" id="nav" aria-label="${esc(ui.nav.menuToggle)}"><ul>${opts.nav.map((n) => `<li><a href="${n.href}"${n.href === opts.path ? ' aria-current="page"' : ""}>${esc(n.label)}</a></li>`).join("")}</ul></nav></div></header>
 <main id="main">
@@ -489,7 +492,7 @@ export function renderSite(input: RenderInput): RenderedSite {
     { href: `${text.offerPage}.html`, label: text.offerLabel },
     ...(order.includes("about") ? [{ href: "index.html#about", label: ui.nav.about }] : []),
     ...(order.includes("hours_location") ? [{ href: "index.html#visit", label: ui.nav.visit }] : []),
-    ...(hasBooking ? [{ href: "index.html#booking", label: ui.nav.book }] : []),
+    ...(hasBooking ? [{ href: "index.html#booking", label: text.requestKind === "quote" ? ui.nav.quote : ui.nav.book }] : []),
     { href: "index.html#contact", label: ui.nav.contact },
   ];
 

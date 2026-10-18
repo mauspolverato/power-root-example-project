@@ -50,6 +50,8 @@ The production build differs from the demo:
 - search engines allowed
 - schema.org business data, canonical URLs, `sitemap.xml`, a 404 page and a favicon
 - the booking form **really opens WhatsApp** with the request filled in, or the visitor's email app if the business has no mobile number
+- photos are compressed to WebP (800/1600px) with a JPEG fallback, and QA fails any page over 3 MB
+- `og.png` (the preview card shown when the link is shared on WhatsApp) and a home-screen icon are generated
 - placeholder images never appear: sections without photos switch to text layouts
 
 `build` warns you if the text is still generic fallback copy.
@@ -57,6 +59,12 @@ The production build differs from the demo:
 Upload the folder to any static host, for example Cloudflare Pages (free): drag and drop the folder in the dashboard, or run `npx wrangler pages deploy output/sites/<name>`.
 
 **Photos:** add a `photos` column to your CSV, with file paths or URLs separated by `|`, best photo first. Photo 1 becomes the hero, photo 2 goes in "about", and photos 3–7 make up the gallery. Re-import the CSV, then run `build` again.
+
+**Logo:** add a `logo` column (file path or URL).
+
+**Clients folder:** `clients/<name>/` holds a client's CSV, hand-written copy (`site.json`, used with `build --content`), assets and the built site, for example `clients/fibraspol/`.
+
+**Instagram-only businesses:** if there is no WhatsApp or email, the request form copies the message and opens the business's Instagram chat (`ig.me`).
 
 **WhatsApp:** Venezuelan mobile numbers (0412/0414/0416/0422/0424/0426) are detected automatically. Use a `whatsapp` column if the business uses a different number.
 

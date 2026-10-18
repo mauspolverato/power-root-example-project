@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacidad — Industrias Fibraspol</title>
+<meta name="description" content="Privacidad — Industrias Fibraspol.">
+
+
+<meta property="og:title" content="Privacidad — Industrias Fibraspol">
+<meta property="og:description" content="Privacidad — Industrias Fibraspol.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_VE">
+
+
+<meta name="theme-color" content="#2340a8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+<a class="skip" href="#main">Ir al contenido</a>
+
+<header class="site"><div class="wrap"><a class="brand has-logo" href="index.html"><img src="img/logo.png" alt="" height="40" onerror="this.remove()"><span>Industrias Fibraspol</span></a>
+<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav">Menú</button>
+<nav class="main" id="nav" aria-label="Menú"><ul><li><a href="productos.html">Productos y servicios</a></li><li><a href="index.html#about">Nosotros</a></li><li><a href="index.html#visit">Visítanos</a></li><li><a href="index.html#booking">Cotizar</a></li><li><a href="index.html#contact">Contacto</a></li></ul></nav></div></header>
+<main id="main">
+<section><div class="wrap prose"><h1>Aviso de privacidad</h1>
+<h2>Quiénes somos</h2><p>Industrias Fibraspol, Av. Lisandro Alvarado, Zona Industrial La Florida, Transversal 93, Valencia, Carabobo, es responsable de los datos personales recibidos a través de este sitio web.</p>
+<h2>Qué datos recibimos y para qué</h2><p>Cuando nos envías una solicitud (por WhatsApp, correo o formulario) usamos los datos que nos das —nombre, contacto y mensaje— únicamente para responderte y gestionar tu reserva o cita.</p>
+<h2>Cuánto tiempo los guardamos</h2><p>Solo el tiempo necesario para atender tu solicitud.</p>
+<h2>Terceros</h2><p>Las fuentes tipográficas se cargan desde Google Fonts y el mapa, solo si decides mostrarlo, desde OpenStreetMap o Google Maps. Si nos escribes por WhatsApp, aplica también la política de privacidad de WhatsApp. Este sitio no usa cookies de seguimiento.</p>
+<h2>Tus derechos</h2><p>Puedes pedirnos ver, corregir o eliminar tus datos en cualquier momento.</p></div></section>
+</main>
+<footer class="site"><div class="wrap"><span>© 2026 Industrias Fibraspol</span><span>Av. Lisandro Alvarado, Zona Industrial La Florida, Transversal 93, Valencia, Carabobo</span><a href="privacy.html">Privacidad</a></div></footer>
+
+<script>(()=>{const t=document.querySelector('.menu-toggle'),n=document.querySelector('nav.main');
+t?.addEventListener('click',()=>{const o=n.classList.toggle('open');t.setAttribute('aria-expanded',o)});
+n?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{n.classList.remove('open');t?.setAttribute('aria-expanded','false')}));
+document.querySelectorAll('form[data-booking]').forEach(f=>f.addEventListener('submit',e=>{e.preventDefault();
+const err=f.querySelector('.form-error'),st=f.querySelector('.form-status'),bad=[...f.querySelectorAll('[required]')].filter(i=>i.type==='checkbox'?!i.checked:!i.value.trim());
+f.querySelectorAll('[aria-invalid]').forEach(i=>i.removeAttribute('aria-invalid'));bad.forEach(i=>i.setAttribute('aria-invalid','true'));
+if(bad.length){err.hidden=false;bad[0].focus();return}err.hidden=true;
+const lines=[...f.querySelectorAll('[data-label]')].filter(i=>i.value.trim()).map(i=>'• '+i.dataset.label+': '+(i.type==='date'?new Date(i.value+'T12:00').toLocaleDateString(document.documentElement.lang,{weekday:'long',day:'numeric',month:'long',year:'numeric'}):i.value.trim()));
+const msg=f.dataset.intro+lines.join('\n'),d=f.dataset;
+if(d.mode==='demo'){st.replaceChildren(Object.assign(document.createElement('p'),{textContent:d.msgDemo}),Object.assign(document.createElement('pre'),{textContent:msg}));return}
+if(d.channel==='instagram'){navigator.clipboard?.writeText(msg).catch(()=>{});window.open('https://ig.me/m/'+d.ig,'_blank','noopener');st.replaceChildren(Object.assign(document.createElement('p'),{textContent:d.msgLive}),Object.assign(document.createElement('pre'),{textContent:msg}));return}
+const url=d.channel==='whatsapp'?'https://wa.me/'+d.wa+'?text='+encodeURIComponent(msg):'mailto:'+d.email+'?subject='+encodeURIComponent(d.subject)+'&body='+encodeURIComponent(msg);
+if(d.channel==='whatsapp')window.open(url,'_blank','noopener');else location.href=url;st.textContent=d.msgLive}));
+document.querySelectorAll('[data-load-map]').forEach(b=>b.addEventListener('click',()=>{const i=document.createElement('iframe');i.src=b.dataset.loadMap;i.title='Mapa';i.loading='lazy';b.closest('[data-map-box]').replaceChildren(i)}));
+const r=document.querySelectorAll('.reveal');if('IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}}),{threshold:.12});r.forEach(el=>io.observe(el))}else r.forEach(el=>el.classList.add('in'))})();</script>
+</body>
+</html>

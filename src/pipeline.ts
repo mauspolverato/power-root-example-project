@@ -161,10 +161,11 @@ export function exportEdits(store: Store, b: Business): string {
  * Builds the real, publishable site from the stored (or hand-edited) brief and
  * copy: no banner, no placeholders, live WhatsApp/email booking, SEO files.
  */
-export async function buildProduction(store: Store, b: Business, opts: { siteUrl?: string; skipQa?: boolean } = {}): Promise<{ dir: string; qa: QaReport | null; genericCopy: boolean }> {
+export async function buildProduction(store: Store, b: Business, opts: { siteUrl?: string; skipQa?: boolean; contentFile?: string } = {}): Promise<{ dir: string; qa: QaReport | null; genericCopy: boolean }> {
   let content = store.getArtifact<SiteContent>(b.id, "content");
   let brief = store.getArtifact<DesignBrief>(b.id, "brief");
-  const file = editsPath(b);
+  const file = opts.contentFile ?? editsPath(b);
+  if (opts.contentFile && !existsSync(file)) throw new Error(`Content file not found: ${file}`);
   if (existsSync(file)) {
     const edited = JSON.parse(readFileSync(file, "utf8")) as { content: unknown; brief: unknown };
     content = SiteContent.parse(edited.content);

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" width="1600" height="1200">
+  <!-- Illustration (not a photograph): insulated fibreglass truck body ("cava") in Fibraspol colours. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e3eefc"/>
+      <stop offset="1" stop-color="#f6f9fe"/>
+    </linearGradient>
+    <linearGradient id="box" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e7eef8"/>
+    </linearGradient>
+    <linearGradient id="cab" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3f63d4"/>
+      <stop offset="1" stop-color="#1f3a9e"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#cfe6ff"/>
+      <stop offset="1" stop-color="#8fb9ef"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1200" fill="url(#sky)"/>
+  <!-- cold air lines -->
+  <g fill="none" stroke="#9cc3f2" stroke-width="10" stroke-linecap="round" opacity=".7">
+    <path d="M150 300 h180"/><path d="M110 360 h260"/><path d="M190 420 h140"/>
+  </g>
+  <!-- snowflakes -->
+  <g stroke="#7fb2ee" stroke-width="9" stroke-linecap="round" opacity=".85">
+    <g transform="translate(1380 210)"><path d="M0 -46V46M-40 -23L40 23M-40 23L40 -23"/></g>
+    <g transform="translate(1250 120) scale(.6)"><path d="M0 -46V46M-40 -23L40 23M-40 23L40 -23"/></g>
+    <g transform="translate(1470 330) scale(.45)"><path d="M0 -46V46M-40 -23L40 23M-40 23L40 -23"/></g>
+  </g>
+  <!-- ground -->
+  <rect x="0" y="930" width="1600" height="270" fill="#dbe6f5"/>
+  <rect x="0" y="925" width="1600" height="10" fill="#c3d4ec"/>
+  <ellipse cx="820" cy="935" rx="640" ry="26" fill="#b9cbe6" opacity=".7"/>
+  <!-- chassis -->
+  <rect x="250" y="820" width="1120" height="46" rx="10" fill="#26324a"/>
+  <!-- insulated box (cava) -->
+  <rect x="250" y="360" width="830" height="470" rx="26" fill="url(#box)" stroke="#c9d7ec" stroke-width="6"/>
+  <rect x="250" y="360" width="830" height="40" rx="20" fill="#f9fbff"/>
+  <rect x="250" y="690" width="830" height="44" fill="#2a49b8"/>
+  <rect x="250" y="734" width="830" height="14" fill="#6fb0f2"/>
+  <!-- box panel seams -->
+  <g stroke="#d6e1f1" stroke-width="5"><path d="M527 404V688"/><path d="M804 404V688"/></g>
+  <!-- snowflake badge on box -->
+  <g transform="translate(665 545)">
+    <circle r="92" fill="#eaf2fe" stroke="#b9d3f5" stroke-width="6"/>
+    <g stroke="#2a49b8" stroke-width="14" stroke-linecap="round">
+      <path d="M0 -58V58M-50 -29L50 29M-50 29L50 -29"/>
+      <path d="M0 -58l-14 -14M0 -58l14 -14M0 58l-14 14M0 58l14 14" stroke-width="10"/>
+    </g>
+  </g>
+  <!-- cab -->
+  <path d="M1100 470h150c34 0 58 14 74 42l64 112c10 18 16 38 16 59v137H1100z" fill="url(#cab)"/>
+  <path d="M1140 505h105c18 0 30 8 39 23l50 92h-194z" fill="url(#glass)"/>
+  <rect x="1100" y="650" width="304" height="16" fill="#18307f" opacity=".5"/>
+  <rect x="1150" y="690" width="44" height="10" rx="5" fill="#9fc0f5"/>
+  <rect x="1386" y="760" width="26" height="40" rx="6" fill="#ffd36b"/>
+  <!-- wheels -->
+  <g>
+    <circle cx="420" cy="880" r="78" fill="#1c2436"/><circle cx="420" cy="880" r="34" fill="#c5d0e2"/>
+    <circle cx="600" cy="880" r="78" fill="#1c2436"/><circle cx="600" cy="880" r="34" fill="#c5d0e2"/>
+    <circle cx="1230" cy="880" r="78" fill="#1c2436"/><circle cx="1230" cy="880" r="34" fill="#c5d0e2"/>
+  </g>
+</svg>

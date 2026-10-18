@@ -49,7 +49,7 @@ export function importCsv(file: string): BusinessInput[] {
     };
     const industry = Industry.safeParse(get("industry"));
     const socials: Record<string, string> = {};
-    for (const s of ["instagram", "facebook", "tiktok"]) {
+    for (const s of ["instagram", "facebook", "tiktok", "linktree"]) {
       const v = get(s);
       if (v) socials[s] = v;
     }
