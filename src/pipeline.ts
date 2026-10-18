@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { auditWebsite } from "./audit/website.ts";
 import { buildBrief, heuristicBrief, sanitizeBrief } from "./brand/analyze.ts";
@@ -7,7 +7,9 @@ import { extractBrandSignals } from "./brand/extract.ts";
 import { config } from "./config.ts";
 import type { Store } from "./db.ts";
 import { writeContent } from "./generator/content.ts";
+import { processPhotos } from "./generator/images.ts";
 import { renderSite, writeSite } from "./generator/render.ts";
+import { renderShareImages } from "./generator/share.ts";
 import { quote } from "./pricing/engine.ts";
 import { analysisReport, clientProposal } from "./proposal/proposal.ts";
 import { type QaReport, runQa } from "./qa/check.ts";
@@ -66,13 +68,16 @@ export async function processBusiness(store: Store, b: Business, opts: RunOption
   const dirName = `${slugify(b.name)}-${token}`;
   const previewDir = path.join(config.outputDir, "demos", dirName);
   const reportDir = path.join(config.outputDir, "reports", dirName);
+  const images = await processPhotos(b.photos, previewDir);
+  const logoUrl = placeLogo(b, previewDir) ?? signals?.logoUrl;
   const render = (br: DesignBrief) =>
     renderSite({
       business: b,
       brief: br,
       content,
       agency: config.agency,
-      logoUrl: signals?.logoUrl,
+      logoUrl,
+      images,
       extraImages: opts.useSiteImages ? signals?.imageUrls : undefined,
       isDemo: true,
     });
@@ -121,6 +126,17 @@ export function summarize(store: Store, b: Business): string {
   return `#${b.id} ${b.name} [${b.industry}] stage=${store.getStage(b.id)} score=${score?.score ?? "-"} site=${audit ? audit.url ?? "none" : b.website ?? "?"}`;
 }
 
+/** Copies the business's own logo file into the site; returns its site-relative path. */
+function placeLogo(b: Business, dir: string): string | null {
+  if (!b.logo) return null;
+  if (/^https?:\/\//.test(b.logo)) return b.logo;
+  if (!existsSync(b.logo)) return null;
+  const dest = `img/logo${path.extname(b.logo).toLowerCase()}`;
+  mkdirSync(path.join(dir, "img"), { recursive: true });
+  copyFileSync(b.logo, path.join(dir, dest));
+  return dest;
+}
+
 /** Path of the hand-editable copy for a business (created by `agency edit <id>`). */
 export function editsPath(b: Business): string {
   return path.join(config.dataDir, "edits", `${b.id}-${slugify(b.name)}.json`);
@@ -160,9 +176,13 @@ export async function buildProduction(store: Store, b: Business, opts: { siteUrl
 
   const siteUrl = opts.siteUrl?.replace(/\/$/, "");
   if (siteUrl && !/^https:\/\//.test(siteUrl)) throw new Error("--domain must be a full https:// URL, e.g. https://arepera.com");
-  const site = renderSite({ business: b, brief: sanitizeBrief(brief, b.industry), content, agency: config.agency, logoUrl: signals?.logoUrl, isDemo: false, siteUrl });
   const dir = path.join(config.outputDir, "sites", slugify(b.name));
   rmSync(dir, { recursive: true, force: true });
+  const finalBrief = sanitizeBrief(brief, b.industry);
+  const images = await processPhotos(b.photos, dir);
+  const logoUrl = placeLogo(b, dir) ?? signals?.logoUrl;
+  const share = await renderShareImages(b, finalBrief, images, dir, b.logo && existsSync(b.logo) ? b.logo : undefined);
+  const site = renderSite({ business: b, brief: finalBrief, content, agency: config.agency, logoUrl, images, isDemo: false, siteUrl, ...share });
   writeSite(site, dir);
 
   let qa: QaReport | null = null;

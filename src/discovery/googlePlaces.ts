@@ -30,6 +30,7 @@ const QUERY_WORDS: Record<Industry, string> = {
   clothing: "clothing stores",
   dental: "dental clinics",
   real_estate: "real estate agencies",
+  manufacturer: "manufacturers and workshops",
   other: "local businesses",
 };
 

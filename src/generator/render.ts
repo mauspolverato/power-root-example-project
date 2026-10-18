@@ -4,6 +4,7 @@ import type { Business, DesignBrief, SiteContent } from "../types.ts";
 import { contrast, mix, onColor } from "./color.ts";
 import { formatOpeningHours, INDUSTRY_TEXT, localeFor, UI, type Locale } from "./i18n.ts";
 import { type SectionId, stableHash } from "./industries.ts";
+import type { SiteImage } from "./images.ts";
 import { formatPhone, isLikelyWhatsApp, toE164 } from "./phone.ts";
 
 // Static-site renderer. Output is plain HTML + CSS + a few lines of JS: it
@@ -23,8 +24,13 @@ export interface RenderInput {
   content: SiteContent;
   agency: { name: string; email: string };
   logoUrl?: string | null;
+  /** Optimized photos from processPhotos(); when absent, business.photos are copied as-is. */
+  images?: SiteImage[];
   /** Extra image URLs (e.g. from the business's current website), used after business.photos. */
   extraImages?: string[];
+  /** Site-relative path of the link-preview image (og.png) and touch icon, when generated. */
+  shareImage?: string;
+  touchIcon?: string;
   isDemo: boolean;
   /** Public URL of the production site, e.g. https://arepera.com — enables canonical + sitemap. */
   siteUrl?: string;
@@ -96,11 +102,12 @@ section.tint{background:var(--secondary)}
 .hero-split .wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(2rem,5vw,4.5rem);align-items:center}
 .hero-centered{text-align:center}.hero-centered .lead{margin-inline:auto}.hero-centered .actions{justify-content:center}.hero-centered .media{margin-top:3rem}
 .hero-fullbleed{position:relative;color:#fff;min-height:min(86vh,760px);display:flex;align-items:flex-end;padding-bottom:clamp(3rem,7vw,5.5rem);isolation:isolate}
-.hero-fullbleed .media{position:absolute;inset:0;z-index:-1}.hero-fullbleed .media>*{width:100%;height:100%;object-fit:cover;border-radius:0}
+.hero-fullbleed .media{position:absolute;inset:0;z-index:-1}.hero-fullbleed .media>*,.hero-fullbleed .media img{width:100%;height:100%;object-fit:cover;border-radius:0}
 .hero-fullbleed::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgb(0 0 0 / .05) 20%,rgb(0 0 0 / .72))}
 .hero-fullbleed .lead{color:rgb(255 255 255 / .88)}.hero-fullbleed .btn.ghost{color:#fff}
 @media (max-width:820px){.hero-split .wrap{grid-template-columns:1fr}}
-.media>img,.media>svg,.media .art{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius);box-shadow:var(--shadow)}
+picture{display:contents}
+.media img,.media>svg,.media .art{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius);box-shadow:var(--shadow)}
 .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:1.5rem}
 .card{background:var(--bg);border:var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.6rem}
 section.tint .card{background:color-mix(in srgb,var(--bg) 85%,var(--secondary))}
@@ -115,20 +122,20 @@ section.tint .card{background:color-mix(in srgb,var(--bg) 85%,var(--secondary))}
 .menu-list .price{font-weight:700;color:var(--primary)}
 .menu-list p{margin:.3rem 0 0;color:var(--muted)}
 .gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem}
-.gallery-5>*:first-child{grid-column:span 2;grid-row:span 2}
+.gallery-5>:first-child,.gallery-5>:first-child>img{grid-column:span 2;grid-row:span 2}
 .gallery-3{grid-template-columns:repeat(3,1fr)}
 .gallery-4{grid-template-columns:repeat(2,1fr)}
 .gallery.gallery-4 img,.gallery.gallery-4 svg{aspect-ratio:3/2}
 .gallery img,.gallery svg{width:100%;height:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius)}
-@media (max-width:640px){.gallery,.gallery-4{grid-template-columns:repeat(2,1fr)}.gallery-3>*:first-child,.gallery-5>*:first-child{grid-column:span 2}}
+@media (max-width:640px){.gallery,.gallery-4{grid-template-columns:repeat(2,1fr)}.gallery-3>:first-child,.gallery-3>:first-child>img,.gallery-5>:first-child,.gallery-5>:first-child>img{grid-column:span 2}}
 form.request{display:grid;gap:1rem;max-width:40rem}
 form.request .two{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 @media (max-width:560px){form.request .two{grid-template-columns:1fr}}
 label{display:grid;gap:.35rem;font-weight:600;font-size:.92rem}
 input,textarea,select{font:inherit;padding:.75rem .9rem;min-height:44px;border:1px solid color-mix(in srgb,var(--text) 35%,var(--bg));border-radius:min(var(--radius),10px);background:var(--bg);color:var(--text)}
 .consent{display:flex;gap:.6rem;align-items:flex-start;font-weight:400}.consent input{min-height:auto;margin-top:.35rem}
-.hero-centered .media>*{aspect-ratio:21/9}
-@media (max-width:640px){.hero-centered .media>*{aspect-ratio:4/3}}
+.hero-centered .media>*,.hero-centered .media img{aspect-ratio:21/9}
+@media (max-width:640px){.hero-centered .media>*,.hero-centered .media img{aspect-ratio:4/3}}
 .form-note{font-size:.85rem;color:var(--muted)}
 .form-status{font-weight:600;color:var(--primary)}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,5vw,4rem)}
@@ -183,16 +190,22 @@ interface Ctx {
   locale: Locale;
   ui: (typeof UI)[Locale];
   text: (typeof INDUSTRY_TEXT)[Locale][Business["industry"]];
-  images: string[];
+  images: SiteImage[];
   whatsapp: string | null; // E.164 digits
+  instagram: string | null; // handle, for ig.me direct-message links
   tel: string | null; // E.164 digits for tel: links
 }
 
+const IG_ICON = `<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>`;
 const WA_ICON = `<svg aria-hidden="true" viewBox="0 0 32 32" width="22" height="22" fill="currentColor"><path d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3Zm0 23.7c-2 0-4-.6-5.7-1.6l-.4-.2-3.9 1 1-3.8-.3-.4A10.7 10.7 0 1 1 16 26.7Zm5.9-8c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2l-1 1.2c-.2.2-.4.2-.7.1a8.8 8.8 0 0 1-4.4-3.8c-.3-.6.3-.5 1-1.7.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.7 3.7 0 0 0-1.1 2.7 6.4 6.4 0 0 0 1.3 3.4 14.7 14.7 0 0 0 5.6 5c2.1.9 2.9 1 4 .8.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.3.2-1.5l-.6-.3Z"/></svg>`;
 
-function image(ctx: Ctx, index: number, label: string): string {
-  const src = ctx.images[index];
-  if (src) return `<img src="${esc(src)}" alt="${esc(label)}" loading="${index === 0 ? "eager" : "lazy"}" decoding="async">`;
+function image(ctx: Ctx, index: number, label: string, sizes = "(max-width: 820px) 100vw, 50vw"): string {
+  const img = ctx.images[index];
+  if (img) {
+    const dims = img.width && img.height ? ` width="${img.width}" height="${img.height}"` : "";
+    const tag = `<img src="${esc(img.src)}" alt="${esc(label)}"${dims} loading="${index === 0 ? "eager" : "lazy"}" decoding="async"${index === 0 ? ' fetchpriority="high"' : ""}>`;
+    return img.srcset ? `<picture><source type="image/webp" srcset="${esc(img.srcset)}" sizes="${sizes}">${tag}</picture>` : tag;
+  }
   // Production sites never show placeholders; the layout adapts instead.
   if (!ctx.input.isDemo) return "";
   return placeholderArt(ctx.input.brief, stableHash(`${ctx.input.business.name}${index}`), ctx.ui.photoPlaceholder(label));
@@ -214,15 +227,33 @@ function offerList(ctx: Ctx, limit: number): string {
     : `<div class="grid-3">${items.map((s) => `<div class="card reveal"><h3>${esc(s.name)}</h3><p>${esc(s.description)}</p>${s.price ? `<p><strong>${esc(s.price)}</strong></p>` : ""}</div>`).join("")}</div>`;
 }
 
+/** "https://www.instagram.com/x/", "instagram.com/x" or "@x" -> "x". */
+export function instagramHandle(value: string | undefined): string | null {
+  if (!value) return null;
+  const m = value.match(/instagram\.com\/([A-Za-z0-9._]+)/) ?? value.match(/^@?([A-Za-z0-9._]+)$/);
+  return m?.[1] ?? null;
+}
+
+const igLink = (handle: string) => `https://ig.me/m/${handle}`;
+
 function waLink(number: string, message?: string): string {
   return `https://wa.me/${number}${message ? `?text=${encodeURIComponent(message)}` : ""}`;
 }
 
+/** How booking requests reach the business: WhatsApp (prefilled), email, or Instagram DM (copied + pasted). */
+function bookingChannel(ctx: Ctx): "whatsapp" | "email" | "instagram" | null {
+  if (ctx.whatsapp) return "whatsapp";
+  if (ctx.input.business.email) return "email";
+  if (ctx.instagram) return "instagram";
+  return null;
+}
+
 /** Where the main call-to-action should go, best channel first. */
 function primaryHref(ctx: Ctx, order: SectionId[]): string {
-  if (ctx.text.bookingLabel && order.includes("booking") && (ctx.whatsapp || ctx.input.business.email)) return "#booking";
+  if (ctx.text.bookingLabel && order.includes("booking") && bookingChannel(ctx)) return "#booking";
   if (ctx.whatsapp) return waLink(ctx.whatsapp);
   if (ctx.tel) return `tel:+${ctx.tel}`;
+  if (ctx.instagram) return igLink(ctx.instagram);
   return "#contact";
 }
 
@@ -258,23 +289,24 @@ function section(id: SectionId, ctx: Ctx, order: SectionId[]): string {
     case "offer":
       return `<section id="offer"><div class="wrap"><span class="eyebrow">${esc(t.offerLabel)}</span><h2>${esc(t.offerLabel)}</h2>${offerList(ctx, 6)}<p class="more"><a href="${t.offerPage}.html">${esc(ui.seeFull(t.offerLabel))}</a></p></div></section>`;
     case "gallery": {
-      const tiles = [2, 3, 4, 5, 6].map((i) => image(ctx, i, ui.photo(b.name, i - 1))).filter(Boolean);
+      const tiles = [2, 3, 4, 5, 6].map((i) => image(ctx, i, ui.photo(b.name, i - 1), "(max-width: 640px) 50vw, 33vw")).filter(Boolean);
       if (tiles.length < 3) return ""; // a half-empty gallery looks worse than none
       return `<section class="tint" aria-label="${esc(ui.gallery)}"><div class="wrap"><div class="gallery gallery-${tiles.length} reveal">${tiles.join("")}</div></div></section>`;
     }
     case "booking": {
-      if (!t.bookingLabel || (!ctx.whatsapp && !b.email)) return "";
-      const channel = ctx.whatsapp ? "whatsapp" : "email";
+      const channel = bookingChannel(ctx);
+      if (!t.bookingLabel || !channel) return "";
       const attrs = [
         `data-booking`,
         `data-mode="${ctx.input.isDemo ? "demo" : "live"}"`,
         `data-channel="${channel}"`,
         ctx.whatsapp ? `data-wa="${ctx.whatsapp}"` : "",
         b.email ? `data-email="${esc(b.email)}"` : "",
+        ctx.instagram ? `data-ig="${esc(ctx.instagram)}"` : "",
         `data-intro="${esc(ui.bookingMessage(b.name, ""))}"`,
         `data-subject="${esc(t.bookingLabel)} — ${esc(b.name)}"`,
-        `data-msg-demo="${esc(channel === "whatsapp" ? ui.formResult.demo : ui.formResult.demoMessage)}"`,
-        `data-msg-live="${esc(channel === "whatsapp" ? ui.formResult.opened : ui.formResult.mailFallback)}"`,
+        `data-msg-demo="${esc({ whatsapp: ui.formResult.demo, email: ui.formResult.demoMessage, instagram: ui.formResult.demoInstagram }[channel])}"`,
+        `data-msg-live="${esc({ whatsapp: ui.formResult.opened, email: ui.formResult.mailFallback, instagram: ui.formResult.openedInstagram }[channel])}"`,
       ].filter(Boolean).join(" ");
       const f = ui.form;
       return `<section id="booking"><div class="wrap"><span class="eyebrow">${esc(t.bookingLabel)}</span><h2>${esc(t.bookingLabel)}</h2>
@@ -284,7 +316,7 @@ function section(id: SectionId, ctx: Ctx, order: SectionId[]): string {
 <label>${esc(t.bookingDetailLabel)}<input name="detail" ${isFood || b.industry === "hotel" ? 'inputmode="numeric"' : ""} data-label="${esc(t.bookingDetailLabel)}"></label>
 <label>${esc(f.message)}<textarea name="message" rows="3" data-label="${esc(f.message)}"></textarea></label>
 <label class="consent"><input type="checkbox" name="consent" required> <span>${esc(f.consent)} <a href="privacy.html">${esc(f.privacyLink)}</a>.</span></label>
-<button class="btn${channel === "whatsapp" ? " wa" : ""}" type="submit">${channel === "whatsapp" ? `${WA_ICON} ${esc(f.sendWhatsApp)}` : esc(f.send)}</button>
+<button class="btn${channel === "whatsapp" ? " wa" : ""}" type="submit">${channel === "whatsapp" ? `${WA_ICON} ${esc(f.sendWhatsApp)}` : channel === "instagram" ? `${IG_ICON} ${esc(f.sendInstagram)}` : esc(f.send)}</button>
 <p class="form-note">${esc(f.confirmedBy(b.name))}${ctx.tel ? ` — ${esc(f.orCall)} <a href="tel:+${ctx.tel}">${esc(formatPhone(ctx.tel))}</a>` : ""}.</p>
 <p class="form-error" role="alert" hidden>${esc(f.required)}</p>
 <div class="form-status" role="status" aria-live="polite"></div>
@@ -312,6 +344,7 @@ function section(id: SectionId, ctx: Ctx, order: SectionId[]): string {
     case "contact": {
       const lines = [
         ctx.whatsapp ? `<p><a class="btn wa" href="${waLink(ctx.whatsapp)}">${WA_ICON} ${esc(ui.writeWhatsApp)}</a></p>` : "",
+        !ctx.whatsapp && ctx.instagram ? `<p><a class="btn" href="${igLink(ctx.instagram)}">${IG_ICON} ${esc(ui.writeInstagram)}</a></p>` : "",
         ctx.tel ? `<p>${esc(ui.call)} <a href="tel:+${ctx.tel}">${esc(formatPhone(ctx.tel))}</a></p>` : "",
         b.email ? `<p>${esc(ui.email)} <a href="mailto:${esc(b.email)}">${esc(b.email)}</a></p>` : "",
         b.address ? `<p>${esc(b.address)}</p>` : "",
@@ -333,7 +366,7 @@ export function socialUrl(network: string, value: string): string {
 
 function jsonLd(ctx: Ctx): string {
   const { business: b, content: c, siteUrl } = ctx.input;
-  const types: Record<string, string> = { restaurant: "Restaurant", cafe: "CafeOrCoffeeShop", bar: "BarOrPub", hotel: "Hotel", barber: "HairSalon", salon: "BeautySalon", gym: "ExerciseGym", clothing: "ClothingStore", dental: "Dentist", real_estate: "RealEstateAgent", other: "LocalBusiness" };
+  const types: Record<string, string> = { restaurant: "Restaurant", cafe: "CafeOrCoffeeShop", bar: "BarOrPub", hotel: "Hotel", barber: "HairSalon", salon: "BeautySalon", gym: "ExerciseGym", clothing: "ClothingStore", dental: "Dentist", real_estate: "RealEstateAgent", manufacturer: "LocalBusiness", other: "LocalBusiness" };
   const data: Record<string, unknown> = { "@context": "https://schema.org", "@type": types[b.industry], name: b.name, description: c.seoDescription };
   if (siteUrl) data.url = siteUrl;
   if (b.address) data.address = b.address;
@@ -342,7 +375,7 @@ function jsonLd(ctx: Ctx): string {
   if (b.openingHours && /^[A-Z][a-z][-,A-Za-z\s\d:;]*$/.test(b.openingHours)) data.openingHours = b.openingHours.split(/;\s*/);
   const sameAs = Object.entries(b.socials).map(([k, v]) => socialUrl(k, v));
   if (sameAs.length) data.sameAs = sameAs;
-  if (ctx.images[0] && siteUrl) data.image = new URL(ctx.images[0], `${siteUrl}/`).toString();
+  if (ctx.images[0] && siteUrl) data.image = new URL(ctx.images[0].src, `${siteUrl}/`).toString();
   return `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
 }
 
@@ -358,6 +391,7 @@ if(bad.length){err.hidden=false;bad[0].focus();return}err.hidden=true;
 const lines=[...f.querySelectorAll('[data-label]')].filter(i=>i.value.trim()).map(i=>'• '+i.dataset.label+': '+(i.type==='date'?new Date(i.value+'T12:00').toLocaleDateString(document.documentElement.lang,{weekday:'long',day:'numeric',month:'long',year:'numeric'}):i.value.trim()));
 const msg=f.dataset.intro+lines.join('\\n'),d=f.dataset;
 if(d.mode==='demo'){st.replaceChildren(Object.assign(document.createElement('p'),{textContent:d.msgDemo}),Object.assign(document.createElement('pre'),{textContent:msg}));return}
+if(d.channel==='instagram'){navigator.clipboard?.writeText(msg).catch(()=>{});window.open('https://ig.me/m/'+d.ig,'_blank','noopener');st.replaceChildren(Object.assign(document.createElement('p'),{textContent:d.msgLive}),Object.assign(document.createElement('pre'),{textContent:msg}));return}
 const url=d.channel==='whatsapp'?'https://wa.me/'+d.wa+'?text='+encodeURIComponent(msg):'mailto:'+d.email+'?subject='+encodeURIComponent(d.subject)+'&body='+encodeURIComponent(msg);
 if(d.channel==='whatsapp')window.open(url,'_blank','noopener');else location.href=url;st.textContent=d.msgLive}));
 document.querySelectorAll('[data-load-map]').forEach(b=>b.addEventListener('click',()=>{const i=document.createElement('iframe');i.src=b.dataset.loadMap;i.title='Mapa';i.loading='lazy';b.closest('[data-map-box]').replaceChildren(i)}));
@@ -377,7 +411,8 @@ function page(ctx: Ctx, opts: { path: string; title: string; description: string
   const removeHref = `mailto:${agency.email}?subject=${encodeURIComponent(`Eliminar vista previa / Remove preview: ${b.name}`)}`;
   const banner = isDemo ? `<div class="demo-bar" role="note">${ui.demoBanner(esc(agency.name), esc(b.name), esc(removeHref))}</div>` : "";
   const canonical = siteUrl && !isDemo ? `${siteUrl}/${opts.path === "index.html" ? "" : opts.path}` : null;
-  const ogImage = siteUrl && ctx.images[0] ? new URL(ctx.images[0], `${siteUrl}/`).toString() : null;
+  const shareSrc = ctx.input.shareImage ?? ctx.images[0]?.src;
+  const ogImage = siteUrl && shareSrc ? new URL(shareSrc, `${siteUrl}/`).toString() : null;
   return `<!doctype html>
 <html lang="${ctx.locale}">
 <head>
@@ -395,6 +430,8 @@ ${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">` : ""}
 ${canonical ? `<meta property="og:url" content="${esc(canonical)}">` : ""}
 <meta name="theme-color" content="${brief.palette.primary}">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+${ctx.input.touchIcon ? `<link rel="apple-touch-icon" href="${ctx.input.touchIcon}">` : ""}
+${ogImage && ctx.input.shareImage ? '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' : ""}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?${fonts}&display=swap">
 <link rel="stylesheet" href="styles.css">
@@ -417,18 +454,19 @@ ${ctx.whatsapp ? `<a class="wa-float" href="${waLink(ctx.whatsapp)}" aria-label=
 }
 
 /** Local photo files are copied into img/; URLs are used as-is. */
-export function resolveImages(b: Business, extra: string[] = []): { images: string[]; assets: Record<string, string> } {
-  const images: string[] = [];
+/** Without processPhotos(): local photo files are copied into img/ unchanged; URLs are used as-is. */
+export function resolveImages(b: Business): { images: SiteImage[]; assets: Record<string, string> } {
+  const images: SiteImage[] = [];
   const assets: Record<string, string> = {};
   b.photos.forEach((p, i) => {
-    if (/^https?:\/\//.test(p)) images.push(p);
+    if (/^https?:\/\//.test(p)) images.push({ src: p });
     else if (existsSync(p)) {
       const dest = `img/photo-${i + 1}${path.extname(p).toLowerCase() || ".jpg"}`;
       assets[dest] = path.resolve(p);
-      images.push(dest);
+      images.push({ src: dest });
     }
   });
-  return { images: [...images, ...extra], assets };
+  return { images, assets };
 }
 
 export function renderSite(input: RenderInput): RenderedSite {
@@ -439,11 +477,14 @@ export function renderSite(input: RenderInput): RenderedSite {
   const tel = toE164(b.phone, b.country);
   const waCandidate = b.whatsapp ? toE164(b.whatsapp, b.country) : tel;
   const whatsapp = b.whatsapp ? waCandidate : isLikelyWhatsApp(tel, b.country) ? tel : null;
-  const { images, assets } = resolveImages(b, input.extraImages);
-  const ctx: Ctx = { input, locale, ui, text, images, whatsapp, tel };
+  const resolved = input.images ? { images: input.images, assets: {} } : resolveImages(b);
+  const images = [...resolved.images, ...(input.extraImages ?? []).map((src) => ({ src }))];
+  const assets = resolved.assets;
+  const instagram = instagramHandle(b.socials.instagram);
+  const ctx: Ctx = { input, locale, ui, text, images, whatsapp, instagram, tel };
 
   const order = brief.layout.sectionOrder as SectionId[];
-  const hasBooking = Boolean(text.bookingLabel && order.includes("booking") && (whatsapp || b.email));
+  const hasBooking = Boolean(text.bookingLabel && order.includes("booking") && (whatsapp || b.email || instagram));
   const nav = [
     { href: `${text.offerPage}.html`, label: text.offerLabel },
     ...(order.includes("about") ? [{ href: "index.html#about", label: ui.nav.about }] : []),

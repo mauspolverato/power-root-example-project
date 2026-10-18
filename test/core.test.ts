@@ -10,7 +10,7 @@ import { contrast } from "../src/generator/color.ts";
 import { fallbackContent } from "../src/generator/content.ts";
 import { formatOpeningHours } from "../src/generator/i18n.ts";
 import { formatPhone, isLikelyWhatsApp, toE164 } from "../src/generator/phone.ts";
-import { renderSite, resolveImages } from "../src/generator/render.ts";
+import { instagramHandle, renderSite, resolveImages } from "../src/generator/render.ts";
 import { friendly, quote } from "../src/pricing/engine.ts";
 import { scoreLead } from "../src/scoring/score.ts";
 import type { Business, WebsiteAudit } from "../src/types.ts";
@@ -146,7 +146,7 @@ test("Venezuelan site is in Spanish with WhatsApp booking; production has no pla
 test("local photos are copied into the site", () => {
   const withPhotos = { ...veBiz, photos: ["fixtures/photos/arepera-1.jpg", "https://cdn.example/x.jpg", "missing.jpg"] };
   const { images, assets } = resolveImages(withPhotos);
-  assert.deepEqual(images, ["img/photo-1.jpg", "https://cdn.example/x.jpg"]);
+  assert.deepEqual(images.map((i) => i.src), ["img/photo-1.jpg", "https://cdn.example/x.jpg"]);
   assert.ok(assets["img/photo-1.jpg"]!.endsWith("fixtures/photos/arepera-1.jpg"));
 });
 
@@ -156,4 +156,17 @@ test("Venezuelan quotes are in USD at local price level with positive margins", 
   assert.ok(q.oneTime.price < 600);
   assert.ok(q.marginOneTime > 0 && q.marginMonthly > 0, `${q.marginOneTime} ${q.marginMonthly}`);
   assert.ok(q.features.some((f) => f.includes("WhatsApp")));
+});
+
+test("Instagram-only businesses get Instagram DM booking", () => {
+  assert.equal(instagramHandle("https://www.instagram.com/cavasdefibra/"), "cavasdefibra");
+  assert.equal(instagramHandle("@cavasdefibra"), "cavasdefibra");
+  const igOnly: Business = { id: 3, name: "Taller", industry: "manufacturer", city: "Valencia", country: "VE", socials: { instagram: "@taller.example" }, photos: [], source: "t", sourceId: "3" };
+  const brief = sanitizeBrief(heuristicBrief(igOnly, null), "manufacturer");
+  const site = renderSite({ business: igOnly, brief, content: fallbackContent(igOnly), agency: { name: "S", email: "a@b.c" }, isDemo: false });
+  const html = site.files["index.html"]!;
+  assert.ok(html.includes('data-channel="instagram"'));
+  assert.ok(html.includes("https://ig.me/m/taller.example"));
+  assert.ok(html.includes("Solicita tu cotización"));
+  assert.ok(site.files["productos.html"]);
 });

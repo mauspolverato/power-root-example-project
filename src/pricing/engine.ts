@@ -54,13 +54,14 @@ export function friendly(n: number): number {
   return Math.round(n / step) * step - 10;
 }
 
-const FEATURES: Record<Locale, { base: string[]; shop: string[]; food: string; hotel: string; services: string; bookingTool: string; whatsapp: string }> = {
+const FEATURES: Record<Locale, { base: string[]; shop: string[]; food: string; hotel: string; services: string; quote: string; bookingTool: string; whatsapp: string }> = {
   en: {
     base: ["Custom design based on your brand", "Fast, mobile-first site", "Google-friendly setup (SEO basics + business markup)", "Contact details, opening hours & map", "Privacy notice"],
     shop: ["Online shop (catalog, cart, checkout via Stripe/Shopify)", "Product photo layout"],
     food: "Menu page + reservation requests",
     hotel: "Rooms page + availability requests",
     services: "Services page + appointment requests",
+    quote: "Products page + quote requests",
     bookingTool: "Integration with your booking tool if you have one",
     whatsapp: "Requests arrive on your WhatsApp, already written out",
   },
@@ -70,6 +71,7 @@ const FEATURES: Record<Locale, { base: string[]; shop: string[]; food: string; h
     food: "Página de menú + solicitudes de reserva",
     hotel: "Página de habitaciones + consultas de disponibilidad",
     services: "Página de servicios + solicitudes de cita",
+    quote: "Página de productos + solicitudes de cotización",
     bookingTool: "Conexión con tu sistema de reservas si ya tienes uno",
     whatsapp: "Las solicitudes te llegan directo a tu WhatsApp, ya redactadas",
   },
@@ -79,6 +81,7 @@ export function chooseTier(b: Business, audit: WebsiteAudit | null): { tier: Pri
   const f = FEATURES[localeFor(b)];
   const base = b.phone || b.whatsapp ? [...f.base, f.whatsapp] : f.base;
   if (b.industry === "clothing" || audit?.features.ecommerce) return { tier: "commerce", features: [...base, ...f.shop] };
+  if (b.industry === "manufacturer") return { tier: "business", features: [...base, f.quote] };
   if (["restaurant", "bar", "hotel", "barber", "salon", "dental", "gym", "real_estate"].includes(b.industry)) {
     const extra = b.industry === "restaurant" || b.industry === "bar" ? f.food : b.industry === "hotel" ? f.hotel : f.services;
     return { tier: "business", features: [...base, extra, f.bookingTool] };

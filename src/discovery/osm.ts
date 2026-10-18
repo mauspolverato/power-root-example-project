@@ -20,6 +20,7 @@ export const OSM_TAGS: Record<Exclude<Industry, "other">, string[]> = {
   clothing: ['"shop"~"^(clothes|boutique)$"'],
   dental: ['"amenity"="dentist"', '"healthcare"="dentist"'],
   real_estate: ['"office"="estate_agent"', '"shop"="estate_agent"'],
+  manufacturer: ['"man_made"="works"', '"craft"~"^(metal_construction|carpenter|glaziery|upholsterer|boatbuilder)$"', '"industrial"="factory"'],
 };
 
 export function buildOverpassQuery(city: string, industry: Exclude<Industry, "other">, limit: number): string {

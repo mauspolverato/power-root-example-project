@@ -5,7 +5,7 @@ import type { Business, LeadScore, WebsiteAudit } from "../types.ts";
 // them once you have real reply/close data (see docs/FEASIBILITY.md §9).
 
 const SEVERITY_POINTS = { high: 18, medium: 9, low: 3 } as const;
-const HIGH_VALUE_INDUSTRIES = new Set(["restaurant", "hotel", "dental", "real_estate", "gym", "salon", "barber"]);
+const HIGH_VALUE_INDUSTRIES = new Set(["restaurant", "hotel", "dental", "real_estate", "gym", "salon", "barber", "manufacturer"]);
 
 export const QUALIFY_THRESHOLD = 45;
 

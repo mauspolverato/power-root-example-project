@@ -13,7 +13,7 @@ import { serveDir } from "./server.ts";
 export interface QaProblem {
   page: string;
   viewport: string;
-  kind: "js_error" | "broken_link" | "broken_asset" | "overflow" | "structure" | "a11y" | "interaction" | "placeholder";
+  kind: "js_error" | "broken_link" | "broken_asset" | "overflow" | "structure" | "a11y" | "interaction" | "placeholder" | "weight";
   detail: string;
   blocking: boolean;
 }
@@ -49,6 +49,16 @@ async function checkPage(page: Page, baseUrl: string, siteDir: string, file: str
     links: [...document.querySelectorAll("a[href]")].map((a) => a.getAttribute("href") ?? ""),
     brokenImages: [...document.querySelectorAll("img")].filter((i) => i.complete && i.naturalWidth === 0 && !/^https?:/.test(i.getAttribute("src") ?? "")).map((i) => i.getAttribute("src")),
   }));
+
+  // Weight of everything the page loaded from the site itself (after scrolling, so lazy images count).
+  const bytes = await page.evaluate(() =>
+    (performance.getEntriesByType("navigation").concat(performance.getEntriesByType("resource")) as PerformanceResourceTiming[])
+      .filter((e) => e.name.startsWith(location.origin))
+      .reduce((sum, e) => sum + e.encodedBodySize, 0),
+  );
+  const mb = (bytes / 1_048_576).toFixed(2);
+  if (bytes > 3 * 1_048_576) add("weight", `Page loads ${mb} MB — too heavy for mobile data`);
+  else if (bytes > 1.5 * 1_048_576) add("weight", `Page loads ${mb} MB — consider fewer/smaller photos`, false);
 
   if (facts.overflow > 2) add("overflow", `Page scrolls sideways by ${facts.overflow}px`);
   if (facts.h1 !== 1) add("structure", `Expected exactly one <h1>, found ${facts.h1}`);
@@ -126,6 +136,10 @@ async function checkInteractions(page: Page, viewport: string, add: (kind: QaPro
   if (mode === "demo") {
     const preview = (await form.locator(".form-status pre").textContent()) ?? "";
     if (!preview.includes("QA Prueba") || !preview.includes("2030")) add("interaction", "Booking preview does not contain the entered details");
+  } else if (channel === "instagram") {
+    const opened = await page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
+    if (!/^https:\/\/ig\.me\/m\/[A-Za-z0-9._]+$/.test(opened[0] ?? "")) add("interaction", `Booking did not open the Instagram chat (got: ${opened[0] || "nothing"})`);
+    if (!((await form.locator(".form-status pre").textContent()) ?? "").includes("QA Prueba")) add("interaction", "Instagram booking does not show the message to paste");
   } else if (channel === "whatsapp") {
     const opened = await page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
     const url = opened[0] ?? "";

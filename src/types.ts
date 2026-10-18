@@ -11,6 +11,7 @@ export const INDUSTRIES = [
   "clothing",
   "dental",
   "real_estate",
+  "manufacturer",
   "other",
 ] as const;
 export const Industry = z.enum(INDUSTRIES);
@@ -36,6 +37,8 @@ export const BusinessInput = z.object({
   language: z.enum(["es", "en"]).optional(),
   /** The business's own photos: local file paths or URLs, best first. */
   photos: z.array(z.string()).default([]),
+  /** The business's own logo: local file path or URL. */
+  logo: z.string().optional(),
   source: z.string(),
   sourceId: z.string(),
 });

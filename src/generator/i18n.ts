@@ -36,8 +36,8 @@ export interface UiText {
   photo: (name: string, n: number) => string;
   photoPlaceholder: (label: string) => string;
   gallery: string;
-  form: { name: string; contact: string; date: string; time: string; message: string; send: string; sendWhatsApp: string; consent: string; privacyLink: string; confirmedBy: (name: string) => string; orCall: string; required: string };
-  formResult: { demo: string; demoMessage: string; mailFallback: string; opened: string };
+  form: { name: string; contact: string; date: string; time: string; message: string; send: string; sendWhatsApp: string; sendInstagram: string; consent: string; privacyLink: string; confirmedBy: (name: string) => string; orCall: string; required: string };
+  formResult: { demo: string; demoMessage: string; demoInstagram: string; mailFallback: string; opened: string; openedInstagram: string };
   visit: string;
   hours: string;
   hoursTbd: string;
@@ -54,6 +54,7 @@ export interface UiText {
   call: string;
   email: string;
   writeWhatsApp: string;
+  writeInstagram: string;
   whatsappFloat: string;
   privacy: string;
   privacyPage: (name: string, address: string | undefined, email: string | undefined) => string;
@@ -88,6 +89,7 @@ const es: UiText = {
     message: "Mensaje",
     send: "Enviar solicitud",
     sendWhatsApp: "Enviar por WhatsApp",
+    sendInstagram: "Enviar por Instagram",
     consent: "Acepto que usen mis datos para responder esta solicitud, según el",
     privacyLink: "aviso de privacidad",
     confirmedBy: (n) => `${n} confirmará tu solicitud`,
@@ -97,8 +99,10 @@ const es: UiText = {
   formResult: {
     demo: "Vista previa: en el sitio publicado, este botón abrirá WhatsApp con este mensaje listo para enviar:",
     demoMessage: "Vista previa: en el sitio publicado, este botón enviará la solicitud por correo.",
+    demoInstagram: "Vista previa: en el sitio publicado, este botón copia este mensaje y abre el chat de Instagram para que lo pegues:",
     mailFallback: "Se abrió tu aplicación de correo con la solicitud. Si no se abrió, escríbenos directamente.",
     opened: "¡Listo! Se abrió WhatsApp con tu solicitud. Solo tienes que presionar enviar.",
+    openedInstagram: "Copiamos tu mensaje. Pégalo en el chat de Instagram que se abrió y envíalo.",
   },
   visit: "Visítanos",
   hours: "Horario",
@@ -116,6 +120,7 @@ const es: UiText = {
   call: "Llámanos al",
   email: "Escríbenos a",
   writeWhatsApp: "Escríbenos por WhatsApp",
+  writeInstagram: "Escríbenos por Instagram",
   whatsappFloat: "Escríbenos por WhatsApp",
   privacy: "Privacidad",
   privacyPage: (n, addr, email) => `<h1>Aviso de privacidad</h1>
@@ -155,6 +160,7 @@ const en: UiText = {
     message: "Message",
     send: "Send request",
     sendWhatsApp: "Send via WhatsApp",
+    sendInstagram: "Send via Instagram",
     consent: "I agree to my details being used to answer this request, as described in the",
     privacyLink: "privacy notice",
     confirmedBy: (n) => `${n} will confirm your request`,
@@ -164,8 +170,10 @@ const en: UiText = {
   formResult: {
     demo: "Preview: on the published site, this button opens WhatsApp with this message ready to send:",
     demoMessage: "Preview: on the published site, this button sends the request by email.",
+    demoInstagram: "Preview: on the published site, this button copies this message and opens the Instagram chat so you can paste it:",
     mailFallback: "Your email app opened with the request. If it didn't, please email us directly.",
     opened: "Done! WhatsApp opened with your request — just press send.",
+    openedInstagram: "We copied your message. Paste it into the Instagram chat that just opened and send it.",
   },
   visit: "Visit",
   hours: "Opening hours",
@@ -183,6 +191,7 @@ const en: UiText = {
   call: "Call",
   email: "Email",
   writeWhatsApp: "Message us on WhatsApp",
+  writeInstagram: "Message us on Instagram",
   whatsappFloat: "Message us on WhatsApp",
   privacy: "Privacy",
   privacyPage: (n, addr, email) => `<h1>Privacy notice</h1>
@@ -361,6 +370,19 @@ const enIndustry: Record<Industry, IndustryText> = {
     ],
     faq: [{ q: "How much is my property worth?", a: "Request a valuation and we'll give you an informed estimate." }],
   },
+  manufacturer: {
+    label: "Manufacturer", article: "a", offerLabel: "Products & services", offerPage: "products", bookingLabel: "Request a quote", bookingDetailLabel: "What you need (type, size)", ctaFallback: "Request a quote",
+    highlights: [
+      { title: "Made to order", text: "Tell us what you need and we'll quote it." },
+      { title: "Repairs", text: "We also fix and restore existing work." },
+      { title: "Straight answers", text: "Clear quotes and realistic delivery times." },
+    ],
+    services: [
+      { name: "Manufacturing", description: "Built to your requirements." },
+      { name: "Repairs", description: "Assessment and repair of existing pieces." },
+    ],
+    faq: [{ q: "How do I get a quote?", a: "Send us what you need — type, measurements and photos if you have them — and we'll reply with a quote." }],
+  },
   other: {
     label: "Local business", article: "a", offerLabel: "Services", offerPage: "services", bookingLabel: null, bookingDetailLabel: "Subject", ctaFallback: "Get in touch",
     highlights: [
@@ -531,6 +553,19 @@ const esIndustry: Record<Industry, IndustryText> = {
       { name: "Avalúos", description: "Una estimación informada del valor de tu inmueble." },
     ],
     faq: [{ q: "¿Cuánto vale mi inmueble?", a: "Solicita un avalúo y te damos una estimación informada." }],
+  },
+  manufacturer: {
+    label: "Fábrica", article: "una", offerLabel: "Productos y servicios", offerPage: "productos", bookingLabel: "Solicita tu cotización", bookingDetailLabel: "Qué necesitas (tipo, medidas)", ctaFallback: "Solicitar cotización",
+    highlights: [
+      { title: "Hecho a la medida", text: "Cuéntanos qué necesitas y te enviamos una cotización." },
+      { title: "Reparaciones", text: "También reparamos y recuperamos trabajos existentes." },
+      { title: "Respuestas claras", text: "Cotizaciones claras y tiempos de entrega realistas." },
+    ],
+    services: [
+      { name: "Fabricación", description: "Hecho según tus requerimientos." },
+      { name: "Reparación", description: "Evaluación y reparación de piezas existentes." },
+    ],
+    faq: [{ q: "¿Cómo pido una cotización?", a: "Envíanos lo que necesitas —tipo, medidas y fotos si las tienes— y te respondemos con una cotización." }],
   },
   other: {
     label: "Negocio local", article: "un", offerLabel: "Servicios", offerPage: "servicios", bookingLabel: null, bookingDetailLabel: "Asunto", ctaFallback: "Contáctanos",

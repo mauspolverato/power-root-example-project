@@ -118,6 +118,13 @@ export const INDUSTRY_PROFILES: Record<Industry, IndustryProfile> = {
     fontPairs: [...serifPairs, ...sansPairs],
     features: ["Property listings section", "Valuation requests", "Agent profiles", "Office location & map", "Local SEO"],
   },
+  manufacturer: {
+    sections: ["hero", "offer", "highlights", "about", "gallery", "booking", "hours_location", "faq", "contact"],
+    styles: ["bold", "minimal", "editorial"],
+    palettes: [...cleanPalettes, ...boldPalettes],
+    fontPairs: [...sansPairs, ...boldPairs],
+    features: ["Products & services pages", "Quote requests", "Project gallery", "Location & directions", "Local SEO"],
+  },
   other: {
     sections: ["hero", "about", "offer", "highlights", "gallery", "hours_location", "faq", "contact"],
     styles: ["minimal", "warm", "editorial"],
