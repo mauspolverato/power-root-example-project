@@ -28,8 +28,9 @@ export function isLikelyWhatsApp(e164: string | null, country: string | undefine
   return true; // elsewhere we can't tell from the number; the operator can override with a whatsapp column
 }
 
-/** Display format: "+58 414 123 4567" for VE, otherwise "+<digits>". */
+/** Display format: "+58 414 123 4567" (VE), "+39 351 123 4567" (IT mobile), otherwise "+<digits>". */
 export function formatPhone(e164: string): string {
   if (e164.startsWith("58") && e164.length === 12) return `+58 ${e164.slice(2, 5)} ${e164.slice(5, 8)} ${e164.slice(8)}`;
+  if (e164.startsWith("39") && e164.length === 12) return `+39 ${e164.slice(2, 5)} ${e164.slice(5, 8)} ${e164.slice(8)}`;
   return `+${e164}`;
 }

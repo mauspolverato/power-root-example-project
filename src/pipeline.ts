@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { auditWebsite } from "./audit/website.ts";
 import { buildBrief, heuristicBrief, sanitizeBrief } from "./brand/analyze.ts";
@@ -7,6 +8,8 @@ import { extractBrandSignals } from "./brand/extract.ts";
 import { config } from "./config.ts";
 import type { Store } from "./db.ts";
 import { writeContent } from "./generator/content.ts";
+import { bundleSinglePage } from "./generator/bundle.ts";
+import { INDUSTRY_TEXT, localeFor } from "./generator/i18n.ts";
 import { processPhotos } from "./generator/images.ts";
 import { renderSite, writeSite } from "./generator/render.ts";
 import { renderShareImages } from "./generator/share.ts";
@@ -161,11 +164,12 @@ export function exportEdits(store: Store, b: Business): string {
  * Builds the real, publishable site from the stored (or hand-edited) brief and
  * copy: no banner, no placeholders, live WhatsApp/email booking, SEO files.
  */
-export async function buildProduction(store: Store, b: Business, opts: { siteUrl?: string; skipQa?: boolean; contentFile?: string } = {}): Promise<{ dir: string; qa: QaReport | null; genericCopy: boolean }> {
+/** Stored copy + design for a business, overridden by a hand-edited file when present. */
+function loadSiteSpec(store: Store, b: Business, contentFile?: string): { content: SiteContent; brief: DesignBrief; genericCopy: boolean } {
   let content = store.getArtifact<SiteContent>(b.id, "content");
   let brief = store.getArtifact<DesignBrief>(b.id, "brief");
-  const file = opts.contentFile ?? editsPath(b);
-  if (opts.contentFile && !existsSync(file)) throw new Error(`Content file not found: ${file}`);
+  const file = contentFile ?? editsPath(b);
+  if (contentFile && !existsSync(file)) throw new Error(`Content file not found: ${file}`);
   if (existsSync(file)) {
     const edited = JSON.parse(readFileSync(file, "utf8")) as { content: unknown; brief: unknown };
     content = SiteContent.parse(edited.content);
@@ -173,6 +177,38 @@ export async function buildProduction(store: Store, b: Business, opts: { siteUrl
   }
   if (!content || !brief) throw new Error("Run the pipeline for this business first (agency run --id N)");
   const genericCopy = !existsSync(file) && (content as SiteContent & { source?: string }).source !== "ai";
+  return { content, brief, genericCopy };
+}
+
+/**
+ * A draft to send for feedback: demo mode (preview banner, photo placeholders)
+ * bundled into ONE html file that opens from WhatsApp or a phone's files app.
+ */
+export async function buildDraft(store: Store, b: Business, opts: { contentFile?: string; out?: string } = {}): Promise<{ file: string; qa: QaReport }> {
+  const { content, brief } = loadSiteSpec(store, b, opts.contentFile);
+  const signals = store.getArtifact<BrandSignals>(b.id, "signals");
+  const work = mkdtempSync(path.join(tmpdir(), "draft-"));
+  const finalBrief = sanitizeBrief(brief, b.industry);
+  const images = await processPhotos(b.photos, work);
+  const logoUrl = placeLogo(b, work) ?? signals?.logoUrl;
+  const site = renderSite({ business: b, brief: finalBrief, content, agency: config.agency, logoUrl, images, isDemo: true });
+  const html = bundleSinglePage(site, work, INDUSTRY_TEXT[localeFor(b)][b.industry].offerPage);
+
+  // QA the bundled file exactly as it will be opened.
+  const qaDir = path.join(work, "qa-site");
+  mkdirSync(qaDir, { recursive: true });
+  writeFileSync(path.join(qaDir, "index.html"), html);
+  const qa = await runQa(qaDir, ["index.html"], path.join(config.outputDir, "reports", `${slugify(b.name)}-draft`), "demo");
+
+  const file = opts.out ?? path.join(config.outputDir, "drafts", `${slugify(b.name)}.html`);
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, html);
+  store.log(b.id, "draft", `single-file draft at ${file} (QA ${qa.passed ? "passed" : "FAILED"})`);
+  return { file, qa };
+}
+
+export async function buildProduction(store: Store, b: Business, opts: { siteUrl?: string; skipQa?: boolean; contentFile?: string } = {}): Promise<{ dir: string; qa: QaReport | null; genericCopy: boolean }> {
+  const { content, brief, genericCopy } = loadSiteSpec(store, b, opts.contentFile);
   const signals = store.getArtifact<BrandSignals>(b.id, "signals");
 
   const siteUrl = opts.siteUrl?.replace(/\/$/, "");

@@ -15,7 +15,7 @@
       { "name": "Asesoría y cotización", "description": "Te orientamos sobre la cava adecuada para tu uso y te enviamos una cotización.", "price": null }
     ],
     "faq": [
-      { "q": "¿Cómo pido una cotización?", "a": "Escríbenos con el tipo de cava que necesitas y sus medidas. Si es una reparación, incluye fotos del daño. Te respondemos con la cotización." },
+      { "q": "¿Cómo pido una cotización?", "a": "Llena el formulario de esta página o escríbenos por WhatsApp con el tipo de cava que necesitas y sus medidas. Si es una reparación, incluye fotos del daño. Te respondemos con la cotización." },
       { "q": "¿Dónde están ubicados?", "a": "En la Av. Lisandro Alvarado, Zona Industrial La Florida, Transversal 93, Valencia, estado Carabobo." },
       { "q": "¿También reparan cavas?", "a": "Sí. Además de fabricar cavas nuevas, reparamos cavas de fibra de vidrio." }
     ],

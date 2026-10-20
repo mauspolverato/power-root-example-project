@@ -7,7 +7,7 @@ import { Store } from "./db.ts";
 import { importCsv } from "./discovery/csv.ts";
 import { discoverGooglePlaces } from "./discovery/googlePlaces.ts";
 import { discoverOsm, OSM_TAGS } from "./discovery/osm.ts";
-import { buildProduction, exportEdits, processBusiness, slugify, summarize } from "./pipeline.ts";
+import { buildDraft, buildProduction, exportEdits, processBusiness, slugify, summarize } from "./pipeline.ts";
 import { serveDir } from "./qa/server.ts";
 import { Industry, type BusinessInput } from "./types.ts";
 
@@ -20,6 +20,8 @@ const HELP = `AI web agency — Phase 1 CLI
   edit <id>                             Export the generated copy/design to a JSON file you can edit
   build <id> [--domain https://x.com] [--content file.json]
                                         Build the real, publishable site (live WhatsApp booking, SEO files)
+  draft <id> [--content file.json] [--out file.html]
+                                        One-file preview (with banner) to send for feedback
   list [--stage <stage>]                List businesses and their pipeline stage
   show <id>                             Everything we know about one business
   suppress <email-or-domain> [reason]   Never contact / never generate for this business
@@ -48,6 +50,7 @@ async function main() {
       "skip-qa": { type: "boolean" },
       domain: { type: "string" },
       content: { type: "string" },
+      out: { type: "string" },
       sites: { type: "boolean" },
     },
   });
@@ -102,6 +105,15 @@ async function main() {
         if (!qa.passed) process.exitCode = 1;
       }
       if (!b.photos.length) console.log("Note: no photos supplied — the site uses text-only layouts. Add a photos column (paths separated by |) and re-import for a richer site.");
+      break;
+    }
+    case "draft": {
+      const b = store.getBusiness(Number(positionals[0]));
+      if (!b) throw new Error("No such business");
+      const { file, qa } = await buildDraft(store, b, { contentFile: values.content, out: values.out });
+      console.log(`Draft (one file, opens on any phone): ${file}\nQA: ${qa.passed ? "passed" : "FAILED"}`);
+      for (const p of qa.problems) console.log(`  [${p.blocking ? "blocking" : "minor"}] ${p.viewport} ${p.kind}: ${p.detail}`);
+      if (!qa.passed) process.exitCode = 1;
       break;
     }
     case "list":

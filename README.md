@@ -43,6 +43,7 @@ npm run agency -- suppress owner@shop.example "asked not to be contacted"
 npm run agency -- edit 1                                    # writes data/edits/1-<name>.json — fix the copy, services, prices, colours
 npm run agency -- build 1 --domain https://elbudare.com     # builds output/sites/<name>/ and tests it
 npm run agency -- serve --sites                             # look at it locally
+npm run agency -- draft 1                                   # one-file preview to send on WhatsApp for feedback
 ```
 
 The production build differs from the demo:

@@ -170,3 +170,8 @@ test("Instagram-only businesses get Instagram DM booking", () => {
   assert.ok(html.includes("Solicita tu cotización"));
   assert.ok(site.files["productos.html"]);
 });
+
+test("explicit international WhatsApp numbers are used as given", () => {
+  assert.equal(toE164("+39 351 987 0332", "VE"), "393519870332");
+  assert.equal(formatPhone("393519870332"), "+39 351 987 0332");
+});

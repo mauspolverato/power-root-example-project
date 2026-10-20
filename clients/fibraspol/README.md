@@ -2,7 +2,8 @@
 
 Fabricación y reparación de cavas isotérmicas en fibra de vidrio · Valencia, Carabobo.
 
-`site/` is the built, ready-to-upload website (Spanish, mobile-first, passed automated browser QA on phone and desktop).
+- `site/`: the built website, ready to upload. It's in Spanish, mobile-first, and passed automated browser QA on phone and desktop. Quote requests open WhatsApp (+39 351 987 0332) with the request already written. Canonical URL, sitemap and the WhatsApp preview card point to https://cavasdefibra.com.
+- `borrador-fibraspol.html`: a single-file draft with a "preview" banner, to send for feedback (`npm run agency -- draft <id> --content clients/fibraspol/site.json --out clients/fibraspol/borrador-fibraspol.html`).
 
 ## Where the content comes from
 
@@ -20,10 +21,10 @@ Nothing else is claimed: no prices, clients, materials specs or delivery times. 
 
 ## Missing — ask Fibraspol for these, then rebuild
 
-1. **WhatsApp number.** This is the most important. It's in their Linktree "WhatsApp" button, which couldn't be reached from the build environment. Right now the quote form copies the request and opens their **Instagram** chat. With the number it opens WhatsApp with the request already written.
+1. ~~WhatsApp number~~ — received: +39 351 987 0332. It's an Italian number, so confirm it's the one that should receive customer quote requests.
 2. **Real photos:** finished cavas, the galpón, work in progress, 5–8 photos. Phone photos are fine; the build compresses them.
 3. **Opening hours:** they have a "Horario" highlight on Instagram.
-4. **Domain:** their current "Página Web" link, or a new one (e.g. `fibraspol.com`). It's needed for the WhatsApp link preview, the sitemap and Google.
+4. ~~Domain~~ — received: https://cavasdefibra.com (the current site couldn't be read from the build environment, so nothing was taken from it). Publishing the new site there replaces the old one, so get the owner's OK and access to the domain's DNS first.
 5. Optional: Facebook URL, email, full address line, RIF.
 
 ## Updating the site
@@ -33,7 +34,7 @@ Edit `business.csv` (add `whatsapp`, more `photos` separated by `|`, `opening_ho
 ```bash
 npm run agency -- import clients/fibraspol/business.csv
 npm run agency -- run --id <id> --force          # first time only; <id> from `npm run agency -- list`
-npm run agency -- build <id> --content clients/fibraspol/site.json --domain https://fibraspol.com
+npm run agency -- build <id> --content clients/fibraspol/site.json --domain https://cavasdefibra.com
 rm -rf clients/fibraspol/site && cp -r output/sites/industrias-fibraspol clients/fibraspol/site
 ```
 
