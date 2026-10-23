@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { chromium } from "playwright-core";
 import path from "node:path";
 import { auditWebsite } from "./audit/website.ts";
 import { buildBrief, heuristicBrief, sanitizeBrief } from "./brand/analyze.ts";
@@ -184,6 +185,23 @@ function loadSiteSpec(store: Store, b: Business, contentFile?: string): { conten
  * A draft to send for feedback: demo mode (preview banner, photo placeholders)
  * bundled into ONE html file that opens from WhatsApp or a phone's files app.
  */
+/** Phone-width PDF of a page as one continuous sheet: opens anywhere, unlike HTML inside chat apps. */
+async function renderPhonePdf(htmlFile: string, pdfFile: string): Promise<void> {
+  const browser = await chromium.launch(config.chromiumPath ? { executablePath: config.chromiumPath } : {});
+  try {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await page.goto(`file://${path.resolve(htmlFile)}`, { waitUntil: "load", timeout: 20_000 }).catch(() => undefined);
+    await page.evaluate(() => document.querySelectorAll(".reveal").forEach((el) => el.classList.add("in")));
+    await page.addStyleTag({ content: ".wa-float{display:none!important} header.site{position:static!important}" });
+    await page.waitForTimeout(500);
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.emulateMedia({ media: "screen" });
+    await page.pdf({ path: pdfFile, width: "390px", height: `${height + 2}px`, printBackground: true, pageRanges: "1" });
+  } finally {
+    await browser.close();
+  }
+}
+
 export async function buildDraft(store: Store, b: Business, opts: { contentFile?: string; out?: string } = {}): Promise<{ file: string; qa: QaReport }> {
   const { content, brief } = loadSiteSpec(store, b, opts.contentFile);
   const signals = store.getArtifact<BrandSignals>(b.id, "signals");
@@ -203,6 +221,7 @@ export async function buildDraft(store: Store, b: Business, opts: { contentFile?
   const file = opts.out ?? path.join(config.outputDir, "drafts", `${slugify(b.name)}.html`);
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, html);
+  await renderPhonePdf(file, file.replace(/\.html$/, "") + ".pdf");
   store.log(b.id, "draft", `single-file draft at ${file} (QA ${qa.passed ? "passed" : "FAILED"})`);
   return { file, qa };
 }

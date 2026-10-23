@@ -130,7 +130,7 @@ const es: UiText = {
 <h2>Cuánto tiempo los guardamos</h2><p>Solo el tiempo necesario para atender tu solicitud.</p>
 <h2>Terceros</h2><p>Las fuentes tipográficas se cargan desde Google Fonts y el mapa, solo si decides mostrarlo, desde OpenStreetMap o Google Maps. Si nos escribes por WhatsApp, aplica también la política de privacidad de WhatsApp. Este sitio no usa cookies de seguimiento.</p>
 <h2>Tus derechos</h2><p>Puedes pedirnos ver, corregir o eliminar tus datos en cualquier momento${email ? ` escribiendo a <a href="mailto:${email}">${email}</a>` : ""}.</p>`,
-  demoBanner: (a, b, href) => `Vista previa conceptual preparada por ${a} para ${b}. No es el sitio oficial ni está aprobado por ${b}. <a href="${href}">Pedir que la eliminemos</a>.`,
+  demoBanner: (a, b, href) => `Vista previa conceptual${a ? ` preparada por ${a}` : ""} para ${b}. No es el sitio oficial ni está aprobado por ${b}. <a href="${href}">Pedir que la eliminemos</a>.`,
   bookingMessage: (b, f) => `Hola ${b}, quisiera hacer una solicitud desde su página web:\n${f}`,
   days: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
   closed: "Cerrado",
@@ -201,7 +201,7 @@ const en: UiText = {
 <h2>How long we keep it</h2><p>Only as long as needed to handle your request.</p>
 <h2>Third parties</h2><p>Fonts load from Google Fonts; the map loads from OpenStreetMap or Google Maps only if you choose to show it. If you message us on WhatsApp, WhatsApp's privacy policy also applies. This site uses no tracking cookies.</p>
 <h2>Your rights</h2><p>You can ask us to see, correct or delete your data at any time${email ? ` by writing to <a href="mailto:${email}">${email}</a>` : ""}.</p>`,
-  demoBanner: (a, b, href) => `Concept preview prepared by ${a} for ${b}. Not an official website and not approved by ${b}. <a href="${href}">Ask us to remove it</a>.`,
+  demoBanner: (a, b, href) => `Concept preview${a ? ` prepared by ${a}` : ""} for ${b}. Not an official website and not approved by ${b}. <a href="${href}">Ask us to remove it</a>.`,
   bookingMessage: (b, f) => `Hi ${b}, I'd like to make a request from your website:\n${f}`,
   days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
   closed: "Closed",

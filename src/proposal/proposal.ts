@@ -76,13 +76,13 @@ export function clientProposal(opts: { business: Business; audit: WebsiteAudit; 
   const lang = localeFor(b);
   const findings = audit.issues.filter((i) => i.severity !== "low").slice(0, 4);
   const date = new Date().toISOString().slice(0, 10);
-  const contact = `${agency.name} · ${agency.email}${agency.address ? ` · ${agency.address}` : ""}`;
+  const contact = `${agency.name || "—"} · ${agency.email}${agency.address ? ` · ${agency.address}` : ""}`;
 
   if (lang === "es") {
     const socialOnly = !audit.url && Object.keys(b.socials).length > 0;
     return `# Una página web para ${b.name}
 
-**Preparado por ${agency.name}** · ${date}
+${agency.name ? `**Preparado por ${agency.name}** · ` : ""}${date}
 
 Preparamos, sin costo, una propuesta de cómo podría verse la página web de ${b.name}:
 
@@ -116,7 +116,7 @@ ${contact}
 
   return `# A new website for ${b.name}
 
-**Prepared by ${agency.name}** · ${date}
+${agency.name ? `**Prepared by ${agency.name}** · ` : ""}${date}
 
 We put together a free concept of what a new website for ${b.name} could look like:
 

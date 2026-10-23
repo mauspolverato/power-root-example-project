@@ -111,7 +111,7 @@ async function main() {
       const b = store.getBusiness(Number(positionals[0]));
       if (!b) throw new Error("No such business");
       const { file, qa } = await buildDraft(store, b, { contentFile: values.content, out: values.out });
-      console.log(`Draft (one file, opens on any phone): ${file}\nQA: ${qa.passed ? "passed" : "FAILED"}`);
+      console.log(`Draft (one file, opens on any phone): ${file}\nPDF to share anywhere: ${file.replace(/\.html$/, "")}.pdf\nQA: ${qa.passed ? "passed" : "FAILED"}`);
       for (const p of qa.problems) console.log(`  [${p.blocking ? "blocking" : "minor"}] ${p.viewport} ${p.kind}: ${p.detail}`);
       if (!qa.passed) process.exitCode = 1;
       break;

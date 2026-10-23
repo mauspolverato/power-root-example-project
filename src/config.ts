@@ -16,7 +16,7 @@ export const config = {
   outputDir: path.resolve(env("OUTPUT_DIR", "./output")),
   previewBaseUrl: env("PREVIEW_BASE_URL", "http://localhost:4173").replace(/\/$/, ""),
   agency: {
-    name: env("AGENCY_NAME", "Your Agency"),
+    name: env("AGENCY_NAME"), // empty = left out of demo banners
     email: env("AGENCY_EMAIL", "hello@example.com"),
     address: env("AGENCY_ADDRESS", ""),
   },
